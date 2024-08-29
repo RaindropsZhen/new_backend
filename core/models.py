@@ -17,14 +17,14 @@ class Place(models.Model):
   name = models.TextField(max_length=500)
   image = models.TextField(max_length=500)
   number_of_tables = models.IntegerField(default=1)
-  font = models.TextField(max_length=500, blank=True)
-  color = models.TextField(max_length=500, blank=True)
-  languages = models.TextField(blank=True,null=True)
-  dotsColor = models.TextField(max_length=500,default='#4267b2',blank=True,null=True)
-  cornersDotColor = models.TextField(max_length=500,default='#4267b2',blank=True,null=True)
-  cornersSquareColor = models.TextField(max_length=500,default='#4267b2',blank=True,null=True)
-  backgroundColorleft = models.TextField(max_length=500,default='white',blank=True,null=True)
-  backgroundColorright = models.TextField(max_length=500,default='#25008E8',blank=True,null=True)
+  # font = models.TextField(max_length=500, blank=True)
+  # color = models.TextField(max_length=500, blank=True)
+  # languages = models.TextField(blank=True,null=True)
+  # dotsColor = models.TextField(max_length=500,default='#4267b2',blank=True,null=True)
+  # cornersDotColor = models.TextField(max_length=500,default='#4267b2',blank=True,null=True)
+  # cornersSquareColor = models.TextField(max_length=500,default='#4267b2',blank=True,null=True)
+  # backgroundColorleft = models.TextField(max_length=500,default='white',blank=True,null=True)
+  # backgroundColorright = models.TextField(max_length=500,default='#25008E8',blank=True,null=True)
   place_type = models.TextField(max_length=500, default=normal,choices=PLACE_TYPES)
   ordering_limit_interval = models.IntegerField(default=300,null=True, blank=True)
   created_at = models.DateTimeField(default=timezone.now)
@@ -78,12 +78,12 @@ class Printer(models.Model):
 
 class Category(models.Model):
   place = models.ForeignKey(Place, on_delete=models.CASCADE, related_name="categories")
-  name = models.TextField(max_length=500)
+  name_cn = models.TextField(max_length=500)
   name_en = models.TextField(max_length=500,blank=True, null=True)
-  name_es = models.TextField(max_length=500,blank=True, null=True)
+  # name_es = models.TextField(max_length=500,blank=True, null=True)
   name_pt = models.TextField(max_length=500,blank=True, null=True)
   created_at = models.DateTimeField(default=timezone.now)
-
+  orders_display = models.IntegerField(blank=True,null=True)
   def __str__(self):
     return "{}/{}".format(self.place, self.name)
   
@@ -101,17 +101,17 @@ class MenuItem(models.Model):
 
   place = models.ForeignKey(Place, on_delete=models.CASCADE)
   category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="menu_items")
-  name = models.TextField(max_length=500)
+  name_cn = models.TextField(max_length=500)
   price = models.IntegerField(default=0)
   image = models.TextField(max_length=500)
   is_available = models.BooleanField(default=True)
   name_en = models.TextField(max_length=500,blank=True, null=True)
-  name_es = models.TextField(max_length=500,blank=True, null=True)
+  # name_es = models.TextField(max_length=500,blank=True, null=True)
   name_pt = models.TextField(max_length=500,blank=True, null=True)
   name_to_print = models.TextField(max_length=500,blank=True, null=True)
-  description = models.TextField(blank=True, null=True)
+  description_cn = models.TextField(blank=True, null=True)
   description_en = models.TextField(blank=True, null=True)
-  description_es = models.TextField(blank=True, null=True)
+  # description_es = models.TextField(blank=True, null=True)
   description_pt = models.TextField(blank=True, null=True)
   created_at = models.DateTimeField(default=timezone.now)
   ordering_timing = models.TextField(max_length=500, default=lunch_and_dinner,choices=ORDERING_TIMING)
@@ -119,7 +119,8 @@ class MenuItem(models.Model):
   lunch_time_end = models.IntegerField(null=True, blank=True)
   dinne_time_start = models.IntegerField(null=True, blank=True)
   dinne_time_end = models.IntegerField(null=True, blank=True)
-  
+  code = models.TextField(max_length=20,blank=True, null=True)
+
   def __str__(self):
     return "{}/{}".format(self.category, self.name)
 

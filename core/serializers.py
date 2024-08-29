@@ -11,7 +11,16 @@ class CategorySerializer(serializers.ModelSerializer):
 
   class Meta:
     model = models.Category
-    fields = ('id', 'name', 'menu_items', 'place','name_en','name_es','name_pt')
+    fields = (
+      'id', 
+      'name_cn', 
+      'menu_items', 
+      'place',
+      'name_en',
+      # 'name_es',
+      'name_pt',
+      'orders_display'
+    )
 
 class PrinterSerializer(serializers.ModelSerializer):
     class Meta:
@@ -33,16 +42,16 @@ class PlaceDetailSerializer(serializers.ModelSerializer):
       'id',
       'name', 
       'image', 
-      'font', 
-      'color', 
+      # 'font', 
+      # 'color', 
       'number_of_tables', 
       'categories',
-      'languages',
-      'dotsColor',
-      'cornersDotColor',
-      'cornersSquareColor',
-      'backgroundColorleft',
-      'backgroundColorright',
+      # 'languages',
+      # 'dotsColor',
+      # 'cornersDotColor',
+      # 'cornersSquareColor',
+      # 'backgroundColorleft',
+      # 'backgroundColorright',
       'printers',
       'place_type',
       'ordering_limit_interval',
