@@ -102,7 +102,7 @@ class MenuItem(models.Model):
   place = models.ForeignKey(Place, on_delete=models.CASCADE)
   category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="menu_items")
   name_cn = models.TextField(max_length=500)
-  price = models.IntegerField(default=0)
+  price = models.FloatField(default=0)
   image = models.TextField(max_length=500)
   is_available = models.BooleanField(default=True)
   name_en = models.TextField(max_length=500,blank=True, null=True)
