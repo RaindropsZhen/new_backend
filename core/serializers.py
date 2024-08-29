@@ -1,0 +1,76 @@
+from rest_framework import serializers
+from . import models
+
+class MenuItemSerializer(serializers.ModelSerializer):
+  class Meta:
+    model = models.MenuItem
+    fields = "__all__"
+
+class CategorySerializer(serializers.ModelSerializer):
+  menu_items = MenuItemSerializer(many=True, read_only=True)
+
+  class Meta:
+    model = models.Category
+    fields = ('id', 'name', 'menu_items', 'place','name_en','name_es','name_pt')
+
+class PrinterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Printer
+        fields = ('id', 'serial_number', 'place','category_name','category','printer_status','printer_status_info')
+
+class TableSerializer(serializers.ModelSerializer):
+  class Meta:
+    model = models.Table
+    fields = "__all__"
+
+class PlaceDetailSerializer(serializers.ModelSerializer):
+  categories = CategorySerializer(many=True, read_only=True)
+  printers = PrinterSerializer(many=True)
+  tables = TableSerializer(many=True)
+  class Meta:
+    model = models.Place
+    fields = (
+      'id',
+      'name', 
+      'image', 
+      'font', 
+      'color', 
+      'number_of_tables', 
+      'categories',
+      'languages',
+      'dotsColor',
+      'cornersDotColor',
+      'cornersSquareColor',
+      'backgroundColorleft',
+      'backgroundColorright',
+      'printers',
+      'place_type',
+      'ordering_limit_interval',
+      "tables",
+      'lunch_time_start',
+      'lunch_time_end',
+      'dinne_time_start',
+      'dinne_time_end'
+    )
+
+class PlaceSerializer(serializers.ModelSerializer):
+  class Meta:
+    model = models.Place
+    fields = (
+        'id',
+        'name', 
+        'image',
+        'number_of_tables',
+        'place_type',
+        'ordering_limit_interval',
+        'lunch_time_start',
+        'lunch_time_end',
+        'dinne_time_start',
+        'dinne_time_end'
+      )
+
+class OrderSerializer(serializers.ModelSerializer):
+  class Meta:
+    model = models.Order
+    fields = "__all__"
+
