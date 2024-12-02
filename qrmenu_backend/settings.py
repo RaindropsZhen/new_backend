@@ -90,10 +90,14 @@ DATABASES = {
         'NAME': 'suki',
         'USER': 'root',
         'PASSWORD': 'wzz19971028',
-        'HOST': '43.131.2.137',
-        'PORT': '3306'
+        'HOST': '43.157.97.20',
+        'PORT': '3306',
+        'OPTIONS': {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"
+        }
     }
 }
+
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
