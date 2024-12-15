@@ -13,12 +13,12 @@ class CategorySerializer(serializers.ModelSerializer):
     model = models.Category
     fields = (
       'id', 
-      'name_cn', 
+      'name', 
       'menu_items', 
       'place',
       'name_en',
-      # 'name_es',
       'name_pt',
+      'name_es',
       'orders_display'
     )
 
@@ -42,16 +42,8 @@ class PlaceDetailSerializer(serializers.ModelSerializer):
       'id',
       'name', 
       'image', 
-      # 'font', 
-      # 'color', 
       'number_of_tables', 
       'categories',
-      # 'languages',
-      # 'dotsColor',
-      # 'cornersDotColor',
-      # 'cornersSquareColor',
-      # 'backgroundColorleft',
-      # 'backgroundColorright',
       'printers',
       'place_type',
       'ordering_limit_interval',
