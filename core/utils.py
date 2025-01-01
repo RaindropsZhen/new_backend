@@ -87,7 +87,7 @@ def format_list_as_string(name_quantity_list):
 <L><LINE p="23" /><B>菜名</B><HT><B>数量</B><BR>
 --------------------------------<BR>"""
     for item in name_quantity_list:
-        name_to_print = item['name'].split('.')[0]
+        name_to_print = item['name'].split('.')[0] + item['name_to_print']
         formatted_string += f"<B2>{name_to_print}<HT>{item['quantity']}<BR></B2><BR>"
         
     formatted_string += """--------------------------------<BR>
@@ -135,7 +135,7 @@ def update_last_ordering_time(place_id,table_number):
     
     # Save the changes to the database
     table.save()
-    
+
 def handle_lunch_dinner_time(place,data):
 
     if data["ordering_timing"] == "lunch":
@@ -184,17 +184,13 @@ def grouped_details(data,printers):
         language = 'es'
 
     for detail in data["detail"]:
-        print(detail)
         item_id = str(detail["id"])
         grouped_details_by_category[item_id].append(detail)
-    print("grouped_details_by_category: ", grouped_details_by_category)
     grouped_details_by_sn = defaultdict(list)
 
     for item_id, details_list in grouped_details_by_category.items():
         for detail in details_list:
-            print("get serial number: ")
             sn_id = get_serial_number_by_menu_item(printers, item_id)
-            print(sn_id)
             grouped_details_by_sn[sn_id].append(detail)
 
     return grouped_details_by_sn
@@ -202,7 +198,7 @@ def grouped_details(data,printers):
 def get_print_content(daily_order_id,data,details_list):
 
     current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
+    
     content_header = """
 <C><LINE p="15" />订单号:<B>{}</B><HT><BOLD>Mesa:</BOLD><B>{}</B><BR>
 下单时间: <BOLD>{}</BOLD>
