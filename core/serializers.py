@@ -25,7 +25,8 @@ class CategorySerializer(serializers.ModelSerializer):
 class PrinterSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Printer
-        fields = ('id', 'serial_number', 'place','category_name','category','printer_status','printer_status_info')
+        fields = "__all__"
+        #fields = ('id', 'serial_number', 'place','category_name','category','printer_status','printer_status_info')
 
 class TableSerializer(serializers.ModelSerializer):
   class Meta:

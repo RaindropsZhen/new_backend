@@ -25,7 +25,6 @@ class PlaceList(generics.ListCreateAPIView):
 
   
   def get_queryset(self):
-    print('fefe')
     return models.Place.objects.filter(owner_id=self.request.user.id)
 
   def perform_create(self, serializer):
@@ -98,29 +97,7 @@ def create_order_intent(request):
     data = json.loads(request.body)
     place_id = data["place"]
     printers = Printer.objects.filter(place_id=place_id)
-    comments = data["comment"]
-    # Create a defaultdict to store comments grouped by category ID
-    grouped_comments = defaultdict(str)
-    # Iterate over the items in the comments dictionary
-    for menu_id, comment_data in comments.items():
-        # Extract category ID from the first element of the value list
-        category_id = comment_data[0]
-        
-        # Look up the menu item in the MenuItem model
-        try:
-            menu_item = MenuItem.objects.get(pk=int(menu_id))
-            menu_name =  menu_item.name
 
-        except MenuItem.DoesNotExist:
-            # Handle the case where the menu item does not exist
-            menu_name = "Unknown Menu"
-        
-        # Concatenate the menu ID and comment with the existing comments for the category
-        grouped_comments[category_id] += f"{menu_name}: {comment_data[1]}  "
-    
-    # Convert the defaultdict to a regular dictionary
-    grouped_comments_dict = dict(grouped_comments)
-    
     table_number = data["table"]
     update_last_ordering_time(place_id,table_number)
 
@@ -146,8 +123,9 @@ def create_order_intent(request):
     today = timezone.now().date()
     max_id = models.Order.objects.filter(created_at__date=today).aggregate(Max('daily_id'))['daily_id__max'] or 0
 
-
-    grouped_details_by_sn = grouped_details(data,printers,grouped_comments_dict)
+    grouped_details_by_sn = grouped_details(data,printers)
+    
+    print(grouped_details_by_sn)
 
     daily_order_id = max_id + 1
     

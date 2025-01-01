@@ -72,6 +72,7 @@ class Printer(models.Model):
   place = models.ForeignKey(Place, on_delete=models.CASCADE,related_name='printers')
   category_name = models.TextField(max_length=500,default=None,blank=True, null=True)
   category = models.TextField(max_length=500,default=None,blank=True, null=True)
+  menu_item_id = models.TextField(max_length=500,default=None,blank=True, null=True)
   printer_status = models.TextField(max_length=500,blank=True, null=True)
   printer_status_info = models.TextField(max_length=500,blank=True, null=True)
   created_at = models.DateTimeField(default=timezone.now)
