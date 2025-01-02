@@ -89,107 +89,117 @@ class PrintersDetail(generics.UpdateAPIView):
 def home(request):
    return render(request, 'index.html')
 
-# Create Orders
 @csrf_exempt
 def create_order_intent(request):
+    try:
+        # Step 1: Get the client's IP address
+        client_ip = get_client_ip(request)
+        print(client_ip)
+        # Step 2: Define allowed IP ranges (restaurant's Wi-Fi network)
+        allowed_ips = [
+            "192.168.1.0/24",
+            "127.0.0.1"
+        ]
+        # Step 3: Check if the client IP is in the allowed range
+        if not is_ip_allowed(client_ip, allowed_ips):
+            return JsonResponse({
+                "success": False,
+                "error": "ERROR WIFI"
+            })
 
-  try:
-    data = json.loads(request.body)
-    place_id = data["place"]
-    printers = Printer.objects.filter(place_id=place_id)
+        # Proceed with the original logic if the IP is valid
+        data = json.loads(request.body)
+        place_id = data["place"]
+        printers = Printer.objects.filter(place_id=place_id)
 
-    table_number = data["table"]
-    update_last_ordering_time(place_id,table_number)
+        table_number = data["table"]
 
-    # Verify reCAPTCHA token
-    recaptcha_secret = '6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe'  # Replace with your actual reCAPTCHA secret key
-    recaptcha_response = data.get('recaptchaToken')
+        # Verify reCAPTCHA token
+        recaptcha_secret = '6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe'  # Replace with your actual reCAPTCHA secret key
+        recaptcha_response = data.get('recaptchaToken')
 
-    verification_url = 'https://www.google.com/recaptcha/api/siteverify'
-    payload = {
-        'secret': recaptcha_secret,
-        'response': recaptcha_response
-    }
+        verification_url = 'https://www.google.com/recaptcha/api/siteverify'
+        payload = {
+            'secret': recaptcha_secret,
+            'response': recaptcha_response
+        }
 
-    response = requests.post(verification_url, data=payload)
-    result = response.json()
+        response = requests.post(verification_url, data=payload)
+        result = response.json()
 
-    if not result['success']:
+        if not result['success']:
+            return JsonResponse({
+                "success": False,
+                "error": "reCAPTCHA verification failed"
+            })
+
+        today = timezone.now().date()
+        max_id = models.Order.objects.filter(created_at__date=today).aggregate(Max('daily_id'))['daily_id__max'] or 0
+
+        grouped_details_by_sn = grouped_details(data, printers)
+        grouped_details_by_sn_sushi = {"25ZD9QEV1JD8248": []}
+        grouped_details_by_sn_drinks_dessert = {"25ZD9QEV1JD8248": []}
+
+        for order_item in grouped_details_by_sn["25ZD9QEV1JD8248"]:
+            order_item_category = order_item['category']
+            if order_item_category in [1, 2]:
+                grouped_details_by_sn_sushi["25ZD9QEV1JD8248"].append(order_item)
+            elif order_item_category in [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]:
+                grouped_details_by_sn_drinks_dessert["25ZD9QEV1JD8248"].append(order_item)
+
+        grouped_details_by_sn.pop("25ZD9QEV1JD8248")
+
+        for grouped_details_by_sn_to_print in [grouped_details_by_sn, grouped_details_by_sn_sushi, grouped_details_by_sn_drinks_dessert]:
+            if grouped_details_by_sn_to_print.values() != []:
+                for sn_id, details_list in grouped_details_by_sn_to_print.items():
+                    if details_list != []:
+                        # print("sn_id: ",sn_id)
+                        # print("details_list: ,", details_list)
+                        # daily_order_id = max_id + 1
+                        # content_to_print = get_print_content(daily_order_id,data,details_list)
+                        # print("-----------------------------------------")
+                        # print("content_to_print: ",content_to_print)
+                        # print("-----------------------------------------")
+
+                        # try:
+                        #   response_print = api_print_request(USER_NAME, USER_KEY, sn_id,content_to_print)  
+                        #   response_check_printer = api_check_printer_request(USER_NAME, USER_KEY, sn_id)
+                        #   update_printer_status(sn_id,response_check_printer["data"])
+
+                        # except:
+                        #   continue
+                        
+                        # if response_print["code"] == 0:
+                        #   is_printed = True
+                        # else:
+                        #   is_printed = False
+
+                        daily_order_id = max_id + 1
+                        order = models.Order.objects.create(
+                            place_id=data['place'],
+                            table=data['table'],
+                            detail=json.dumps(data['detail']),
+                            amount=data['amount'],
+                            isTakeAway=data['isTakeAway'],
+                            phoneNumer=data['phoneNumber'],
+                            comment=data['comment'],
+                            arrival_time=data['arrival_time'],
+                            customer_name=data['customer_name'],
+                            daily_id=daily_order_id,
+                            isPrinted=False  # is_printed
+                        )
+        update_last_ordering_time(place_id, table_number)
+
+        return JsonResponse({
+            "success": True,
+            "order": order.id,
+        })
+
+    except Exception as e:
         return JsonResponse({
             "success": False,
-            "error": "reCAPTCHA verification failed"
+            "error": str(e),
         })
-    
-    today = timezone.now().date()
-    max_id = models.Order.objects.filter(created_at__date=today).aggregate(Max('daily_id'))['daily_id__max'] or 0
-
-    grouped_details_by_sn = grouped_details(data,printers)
-    #print("grouped_details_by_sn:, ", grouped_details_by_sn)
-
-
-    grouped_details_by_sn_sushi = {"25ZD9QEV1JD8248":[]}
-    grouped_details_by_sn_drinks_dessert ={"25ZD9QEV1JD8248":[]}
-
-    for order_item in grouped_details_by_sn["25ZD9QEV1JD8248"]:
-      order_item_category = order_item['category']
-      print(type(order_item_category))
-      print(order_item_category)
-      if order_item_category in [1,2]:
-        grouped_details_by_sn_sushi["25ZD9QEV1JD8248"].append(order_item)
-      elif order_item_category in [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]:
-        grouped_details_by_sn_drinks_dessert["25ZD9QEV1JD8248"].append(order_item)
-
-    grouped_details_by_sn.pop("25ZD9QEV1JD8248")
-    
-    for grouped_details_by_sn_to_print in [grouped_details_by_sn, grouped_details_by_sn_sushi, grouped_details_by_sn_drinks_dessert]:
-      if grouped_details_by_sn_to_print.values() != []:
-        for sn_id, details_list in grouped_details_by_sn_to_print.items():
-          if details_list != []:
-            print("sn_id: ",sn_id)
-            print("details_list: ,", details_list)
-            daily_order_id = max_id + 1
-            content_to_print = get_print_content(daily_order_id,data,details_list)
-            print("-----------------------------------------")
-            print("content_to_print: ",content_to_print)
-            print("-----------------------------------------")
-
-            try:
-              response_print = api_print_request(USER_NAME, USER_KEY, sn_id,content_to_print)  
-              response_check_printer = api_check_printer_request(USER_NAME, USER_KEY, sn_id)
-              update_printer_status(sn_id,response_check_printer["data"])
-
-            except:
-              continue
-            
-            if response_print["code"] == 0:
-              is_printed = True
-            else:
-              is_printed = False
-
-            order = models.Order.objects.create(
-              place_id = data['place'],
-              table = data['table'],
-              detail = json.dumps(data['detail']),
-              amount = data['amount'],
-              isTakeAway = data['isTakeAway'],
-              phoneNumer = data['phoneNumber'],
-              comment = data['comment'],
-              arrival_time = data['arrival_time'],
-              customer_name = data['customer_name'],
-              daily_id = daily_order_id,
-              isPrinted = is_printed
-            )
-
-    return JsonResponse({
-      "success": True,
-      "order": order.id,
-    })
-
-  except Exception as e:
-    return JsonResponse({
-      "success": False,
-      "error": str(e),
-    })
     
 @csrf_exempt
 def create_category_intent(request):
@@ -265,19 +275,6 @@ def create_menu_items_intent(request):
         })
 
 
-# def delete_image(request):
-#     data = json.loads(request.body)
-#     public_id = data['public_id']
-
-#     try:
-#         result = cloudinary.uploader.destroy(public_id)
-#         if result.get('result') == 'ok':
-#             return JsonResponse({'message': 'Image deleted successfully.'})
-#         else:
-#             return JsonResponse({'error': 'Failed to delete image.'}, status=400)
-#     except Exception as e:
-#         return JsonResponse({'error': str(e)}, status=500)
-    
 def xpYunQueryPrinterStatus(requests):
   request = model.PrinterRequest(USER_NAME, USER_KEY)
   request.user = USER_NAME
