@@ -119,6 +119,7 @@ def create_order_intent(request):
         recaptcha_response = data.get('recaptchaToken')
 
         verification_url = 'https://www.google.com/recaptcha/api/siteverify'
+        
         payload = {
             'secret': recaptcha_secret,
             'response': recaptcha_response

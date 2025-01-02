@@ -8,3 +8,5 @@ migrations/
 __init__.py
 # Ignore the SQLite database file
 db.sqlite3
+
+/core/globals.py
