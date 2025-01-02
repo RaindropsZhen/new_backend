@@ -34,10 +34,11 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     #'core',
     'core.apps.CoreConfig',
+    'authUser.apps.AuthUserConfig',
     'djoser',   
     'rest_framework',
     'rest_framework.authtoken',
-    'authUser',
+    #'authUser',
 ]
 
 MIDDLEWARE = [
