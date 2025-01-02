@@ -224,6 +224,7 @@ def get_print_content(daily_order_id,data,details_list,font_size):
 def get_client_ip(request):
     """Retrieve the client's IP address from the request."""
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    print(x_forwarded_for)
     if x_forwarded_for:
         ip = x_forwarded_for.split(',')[0]
     else:
