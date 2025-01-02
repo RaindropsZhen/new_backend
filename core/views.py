@@ -96,10 +96,6 @@ def create_order_intent(request):
         client_ip = get_client_ip(request)
         print(client_ip)
         # Step 2: Define allowed IP ranges (restaurant's Wi-Fi network)
-        allowed_ips = [
-            "192.168.1.0/24",
-            "127.0.0.1"
-        ]
         # Step 3: Check if the client IP is in the allowed range
         if not is_ip_allowed(client_ip, allowed_ips):
             return JsonResponse({
@@ -119,7 +115,7 @@ def create_order_intent(request):
         recaptcha_response = data.get('recaptchaToken')
 
         verification_url = 'https://www.google.com/recaptcha/api/siteverify'
-        
+
         payload = {
             'secret': recaptcha_secret,
             'response': recaptcha_response
