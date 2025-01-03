@@ -77,6 +77,7 @@ class Printer(models.Model):
   printer_status_info = models.TextField(max_length=500,blank=True, null=True)
   created_at = models.DateTimeField(default=timezone.now)
 
+
 class Category(models.Model):
   place = models.ForeignKey(Place, on_delete=models.CASCADE, related_name="categories")
   name = models.TextField(max_length=500)

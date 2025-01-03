@@ -92,101 +92,32 @@ def home(request):
 @csrf_exempt
 def create_order_intent(request):
     try:
-        # Step 1: Get the client's IP address
         client_ip = get_client_ip(request)
         print(client_ip)
-        # Step 2: Define allowed IP ranges (restaurant's Wi-Fi network)
-        # Step 3: Check if the client IP is in the allowed range
         if not is_ip_allowed(client_ip, allowed_ips):
             return JsonResponse({
                 "success": False,
                 "error": "ERROR WIFI"
             })
 
-        # Proceed with the original logic if the IP is valid
         data = json.loads(request.body)
-        place_id = data["place"]
-        printers = Printer.objects.filter(place_id=place_id)
-
-        table_number = data["table"]
-
-        # Verify reCAPTCHA token
-        recaptcha_secret = '6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe'  # Replace with your actual reCAPTCHA secret key
-        recaptcha_response = data.get('recaptchaToken')
-
-        verification_url = 'https://www.google.com/recaptcha/api/siteverify'
-
-        payload = {
-            'secret': recaptcha_secret,
-            'response': recaptcha_response
-        }
-
-        response = requests.post(verification_url, data=payload)
-        result = response.json()
-
-        if not result['success']:
-            return JsonResponse({
-                "success": False,
-                "error": "reCAPTCHA verification failed"
-            })
-
         today = timezone.now().date()
         max_id = models.Order.objects.filter(created_at__date=today).aggregate(Max('daily_id'))['daily_id__max'] or 0
 
-        grouped_details_by_sn = grouped_details(data, printers)
-        grouped_details_by_sn_sushi = {"25ZD9QEV1JD8248": []}
-        grouped_details_by_sn_drinks_dessert = {"25ZD9QEV1JD8248": []}
-
-        for order_item in grouped_details_by_sn["25ZD9QEV1JD8248"]:
-            order_item_category = order_item['category']
-            if order_item_category in [1, 2]:
-                grouped_details_by_sn_sushi["25ZD9QEV1JD8248"].append(order_item)
-            elif order_item_category in [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]:
-                grouped_details_by_sn_drinks_dessert["25ZD9QEV1JD8248"].append(order_item)
-
-        grouped_details_by_sn.pop("25ZD9QEV1JD8248")
-
-        for grouped_details_by_sn_to_print in [grouped_details_by_sn, grouped_details_by_sn_sushi, grouped_details_by_sn_drinks_dessert]:
-            if grouped_details_by_sn_to_print.values() != []:
-                for sn_id, details_list in grouped_details_by_sn_to_print.items():
-                    if details_list != []:
-                        # print("sn_id: ",sn_id)
-                        # print("details_list: ,", details_list)
-                        # daily_order_id = max_id + 1
-                        # content_to_print = get_print_content(daily_order_id,data,details_list)
-                        # print("-----------------------------------------")
-                        # print("content_to_print: ",content_to_print)
-                        # print("-----------------------------------------")
-
-                        # try:
-                        #   response_print = api_print_request(USER_NAME, USER_KEY, sn_id,content_to_print)  
-                        #   response_check_printer = api_check_printer_request(USER_NAME, USER_KEY, sn_id)
-                        #   update_printer_status(sn_id,response_check_printer["data"])
-
-                        # except:
-                        #   continue
-                        
-                        # if response_print["code"] == 0:
-                        #   is_printed = True
-                        # else:
-                        #   is_printed = False
-
-                        daily_order_id = max_id + 1
-                        order = models.Order.objects.create(
-                            place_id=data['place'],
-                            table=data['table'],
-                            detail=json.dumps(data['detail']),
-                            amount=data['amount'],
-                            isTakeAway=data['isTakeAway'],
-                            phoneNumer=data['phoneNumber'],
-                            comment=data['comment'],
-                            arrival_time=data['arrival_time'],
-                            customer_name=data['customer_name'],
-                            daily_id=daily_order_id,
-                            isPrinted=False  # is_printed
-                        )
-        update_last_ordering_time(place_id, table_number)
-
+        daily_order_id = max_id + 1
+        order = models.Order.objects.create(
+            place_id=data['place'],
+            table=data['table'],
+            detail=json.dumps(data['detail']),
+            amount=data['amount'],
+            isTakeAway=data['isTakeAway'],
+            phoneNumer=data['phoneNumber'],
+            comment=data['comment'],
+            arrival_time=data['arrival_time'],
+            customer_name=data['customer_name'],
+            daily_id=daily_order_id,
+            isPrinted=False,  # is_printed
+        )
         return JsonResponse({
             "success": True,
             "order": order.id,
