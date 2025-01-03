@@ -92,6 +92,7 @@ def home(request):
 @csrf_exempt
 def create_order_intent(request):
     try:
+        
         client_ip = get_client_ip(request)
         print(client_ip)
         if not is_ip_allowed(client_ip, allowed_ips):
@@ -99,25 +100,36 @@ def create_order_intent(request):
                 "success": False,
                 "error": "ERROR WIFI"
             })
-
         data = json.loads(request.body)
+        place_id = data["place"]
+        printers = Printer.objects.filter(place_id=place_id)
         today = timezone.now().date()
         max_id = models.Order.objects.filter(created_at__date=today).aggregate(Max('daily_id'))['daily_id__max'] or 0
 
         daily_order_id = max_id + 1
-        order = models.Order.objects.create(
-            place_id=data['place'],
-            table=data['table'],
-            detail=json.dumps(data['detail']),
-            amount=data['amount'],
-            isTakeAway=data['isTakeAway'],
-            phoneNumer=data['phoneNumber'],
-            comment=data['comment'],
-            arrival_time=data['arrival_time'],
-            customer_name=data['customer_name'],
-            daily_id=daily_order_id,
-            isPrinted=False,  # is_printed
-        )
+
+        data_detail = data['detail']
+
+        #print(data_detail)
+        for detail in data_detail:
+          item_id = str(detail["id"])
+          sn_id = get_serial_number_by_menu_item(printers, item_id)
+          price = int(detail['price'])
+          order = models.Order.objects.create(
+              place_id=data['place'],
+              table=data['table'],
+              detail=[detail],
+              amount=price,
+              isTakeAway=data['isTakeAway'],
+              phoneNumer=data['phoneNumber'],
+              comment=data['comment'],
+              arrival_time=data['arrival_time'],
+              customer_name=data['customer_name'],
+              daily_id=daily_order_id,
+              isPrinted=False,  # is_printed
+              sn_id=sn_id
+          )
+
         return JsonResponse({
             "success": True,
             "order": order.id,

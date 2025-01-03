@@ -76,7 +76,7 @@ class Printer(models.Model):
   printer_status = models.TextField(max_length=500,blank=True, null=True)
   printer_status_info = models.TextField(max_length=500,blank=True, null=True)
   created_at = models.DateTimeField(default=timezone.now)
-
+  
 
 class Category(models.Model):
   place = models.ForeignKey(Place, on_delete=models.CASCADE, related_name="categories")
@@ -147,6 +147,7 @@ class Order(models.Model):
   arrival_time = models.TimeField(null=True, blank=True)
   customer_name = models.TextField(max_length=500,blank=True, null=True,default=None)
   daily_id = models.IntegerField(default=0)
-
+  sn_id = models.TextField(max_length=50,blank=True, null=True)
+  
   def __str__(self):
     return "{}/{}/${}".format(self.place, self.table, self.amount)
