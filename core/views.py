@@ -17,6 +17,7 @@ from core.utils import *
 import json
 import xpyunopensdk.model.model as model
 import xpyunopensdk.service.xpyunservice as service
+import pytz
 
 # Create your views here.
 class PlaceList(generics.ListCreateAPIView):
@@ -110,6 +111,12 @@ def create_order_intent(request):
 
         data_detail = data['detail']
 
+        # Define the Azores timezone
+        azores_tz = pytz.timezone('Atlantic/Azores')
+
+        # Get the current datetime in the Azores timezone
+        current_datetime_azores = datetime.now(azores_tz).strftime("%Y-%m-%d %H:%M:%S")
+
         #print(data_detail)
         for detail in data_detail:
           item_id = str(detail["id"])
@@ -127,7 +134,8 @@ def create_order_intent(request):
               customer_name=data['customer_name'],
               daily_id=daily_order_id,
               isPrinted=False,  # is_printed
-              sn_id=sn_id
+              sn_id=sn_id,
+              created_at = current_datetime_azores
           )
         table_number = data["table"]
         update_last_ordering_time(place_id,table_number)
