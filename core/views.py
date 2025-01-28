@@ -129,7 +129,9 @@ def create_order_intent(request):
               isPrinted=False,  # is_printed
               sn_id=sn_id
           )
-
+        table_number = data["table"]
+        update_last_ordering_time(place_id,table_number)
+        
         return JsonResponse({
             "success": True,
             "order": order.id,
