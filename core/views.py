@@ -115,7 +115,7 @@ def create_order_intent(request):
         azores_tz = pytz.timezone('Atlantic/Azores')
 
         # Get the current datetime in the Azores timezone
-        current_datetime_azores = datetime.now(azores_tz).strftime("%Y-%m-%d %H:%M:%S")
+        current_datetime_azores = datetime.now(azores_tz)
 
         #print(data_detail)
         for detail in data_detail:
@@ -240,3 +240,28 @@ def xpYunQueryPrinterStatus(requests):
   # 1 indicates online and normal status.
   # 2 indicates online and abnormal status.
   # Remarks: Abnormal status means lack of paper, if the printer has been out of contact with the server for more than 30s, it can be confirmed to be offline status.
+
+@csrf_exempt
+def reprint_order(request):
+    try:
+        data = json.loads(request.body)
+        place_id = data["place"]
+        printers = Printer.objects.filter(place_id=place_id)
+        daily_order_id = data["daily_id"]  # Get daily_id from request
+        # Assuming the detail structure is the same as in create_order_intent
+        data_detail = data['detail']
+        
+        grouped_details_by_sn = grouped_details(data, printers)
+        for sn_id, details_list in grouped_details_by_sn.items():
+            content = get_print_content(daily_order_id,data, details_list,"B2")
+            printer_response = api_print_request(USER_NAME, USER_KEY, sn_id, content)
+
+        return JsonResponse({
+            "success": True,
+            "message": "Reprint request sent successfully.",
+        })
+    except Exception as e:
+        return JsonResponse({
+            "success": False,
+            "error": str(e),
+        })
