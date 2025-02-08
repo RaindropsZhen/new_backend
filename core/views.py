@@ -115,7 +115,7 @@ def create_order_intent(request):
         azores_tz = pytz.timezone('Atlantic/Azores')
 
         # Get the current datetime in the Azores timezone
-        current_datetime_azores = datetime.now(azores_tz).strftime("%Y-%m-%d %H:%M:%S")
+        current_datetime_azores = datetime.now(azores_tz)
 
         #print(data_detail)
         for detail in data_detail:
