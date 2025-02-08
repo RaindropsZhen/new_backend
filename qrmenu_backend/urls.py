@@ -23,6 +23,7 @@ urlpatterns = [
     path('api/create_menu_items_intent/', views.create_menu_items_intent),
 
     path('api/create_order_intent/', views.create_order_intent),
+    path('api/reprint_order/', views.reprint_order),
 
     #path('api/printers/', views.PrintersDetail.as_view()),
 
