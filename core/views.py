@@ -117,15 +117,43 @@ def create_order_intent(request):
         # Get the current datetime in the Azores timezone
         current_datetime_azores = datetime.now(azores_tz)
 
+        # Category ID to Name mapping (based on the provided image)
+        category_mapping = {
+            1: "Sushi",
+            2: "寿司套餐",
+            3: "中餐",
+            4: "甜品",
+            5: "饮料",
+            6: "啤酒/酒",
+            7: "水果酒",
+            8: "红酒",
+            9: "绿酒",
+            10: "白酒",
+            11: "粉红酒",
+            12: "威士忌",
+            13: "开胃酒",
+            14: "咖啡",
+        }
+
         #print(data_detail)
         for detail in data_detail:
           item_id = str(detail["id"])
           sn_id = get_serial_number_by_menu_item(printers, item_id)
           price = int(detail['price'])
+          menu_item = MenuItem.objects.get(id=item_id)
+          category_id = menu_item.category_id  # Get the category ID
+          category_name = category_mapping.get(category_id, "Unknown")  # Lookup name, default to "Unknown"
+          detail_with_category = {
+              'id': item_id,
+              'price': price,
+              'category': category_name,
+              'name': detail['name'],
+              'quantity': detail['quantity']
+          }
           order = models.Order.objects.create(
               place_id=data['place'],
               table=data['table'],
-              detail=[detail],
+              detail=json.dumps([detail_with_category]),
               amount=price,
               isTakeAway=data['isTakeAway'],
               phoneNumer=data['phoneNumber'],
