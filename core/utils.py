@@ -217,14 +217,14 @@ def grouped_details(data,printers):
 
     return grouped_details_by_sn
 
-def get_print_content(daily_order_id,data,details_list,font_size):
+def get_print_content(daily_order_id,data,details_list,font_size,date_to_print):
 
-    current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    # current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
     content_header = """
 <C><LINE p="15" />订单号:<B>{}</B><HT><BOLD>Mesa:</BOLD><B>{}</B><BR>
 下单时间: <BOLD>{}</BOLD>
-""".format(daily_order_id,data["table"],current_datetime)
+""".format(daily_order_id,data["table"],date_to_print)
 
     content_body = format_list_as_string(details_list,font_size)
     content = content_header + content_body 
