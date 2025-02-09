@@ -245,15 +245,46 @@ def xpYunQueryPrinterStatus(requests):
 def reprint_order(request):
     try:
         data = json.loads(request.body)
-        place_id = data["place"]
+        place_id = int(data["place"])
         printers = Printer.objects.filter(place_id=place_id)
-        daily_order_id = data["daily_id"]  # Get daily_id from request
+        daily_order_id = int(data["daily_id"])  # Get daily_id from request
         # Assuming the detail structure is the same as in create_order_intent
-        data_detail = data['detail']
+        print("data: \n", data)
+        print("data.get('place'):", data.get("place"))
+        print("data.get('daily_id'):", data.get("daily_id"))
+        print("data.get('detail'):", data.get("detail"))
+        # data_detail = json.loads(data['detail'])
+        # print("data_detail: \n", data_detail)
+        print("data_detail type \n", type(data.get("detail")))
+        for detail in data.get("detail"):
+           print(type(detail))
+        print("---------------------"*2)
+
+        # grouped_details_by_sn = grouped_details(data, printers)
+        grouped_details_by_category = defaultdict(list)
+
+        for detail in data.get("detail"):
+            print("detail : \n", detail)
+            print("-" * 50)
+            item_id = str(detail["id"])
+
+            grouped_details_by_category[item_id].append(detail)
+
+        print("grouped_details_by_category :")
+        print(grouped_details_by_category)
+        print("_"*50)
+
+        grouped_details_by_sn = defaultdict(list)
+
+        for item_id, details_list in grouped_details_by_category.items():
+            for detail in details_list:
+                sn_id = get_serial_number_by_menu_item(printers, item_id)
+                grouped_details_by_sn[sn_id].append(detail)
+        print(grouped_details_by_sn)
         
-        grouped_details_by_sn = grouped_details(data, printers)
         for sn_id, details_list in grouped_details_by_sn.items():
             content = get_print_content(daily_order_id,data, details_list,"B2")
+            print(content)
             printer_response = api_print_request(USER_NAME, USER_KEY, sn_id, content)
 
         return JsonResponse({

@@ -187,7 +187,6 @@ def translate_menu_name_description(data):
 
 def grouped_details(data,printers):
 
-    translator = Translator()
     grouped_details_by_category = defaultdict(list)
 
     language = data["language"]
@@ -198,9 +197,17 @@ def grouped_details(data,printers):
     elif language == 'Español':
         language = 'es'
 
-    for detail in data["detail"]:
+    print(data)
+    for detail in data.get("detail"):
+        print("detail : \n", detail)
+        print("-" * 50)
         item_id = str(detail["id"])
+
         grouped_details_by_category[item_id].append(detail)
+    print("grouped_details_by_category :")
+    print(grouped_details_by_category)
+    print("_"*50)
+
     grouped_details_by_sn = defaultdict(list)
 
     for item_id, details_list in grouped_details_by_category.items():
