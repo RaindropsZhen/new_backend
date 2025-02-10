@@ -31,7 +31,7 @@ class PrinterSerializer(serializers.ModelSerializer):
 class TableSerializer(serializers.ModelSerializer):
   class Meta:
     model = models.Table
-    fields = "__all__"
+    fields = ('id', 'place', 'table_number', 'last_ordering_time', 'number_people', 'created_at', 'blocked')
 
 class PlaceDetailSerializer(serializers.ModelSerializer):
   categories = CategorySerializer(many=True, read_only=True)
@@ -75,4 +75,3 @@ class OrderSerializer(serializers.ModelSerializer):
   class Meta:
     model = models.Order
     fields = "__all__"
-
