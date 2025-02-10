@@ -63,10 +63,10 @@ class Table(models.Model):
   last_ordering_time = models.IntegerField(null=True, blank=True)
   number_people = models.IntegerField(null=True,blank=True,default=0)
   created_at = models.DateTimeField(default=timezone.now)
-  blocked = models.BooleanField(default=False)
+  blocked = models.BooleanField(default=True)
 
   def __str__(self):
-      return f"Table {self.table_number} at {self.place.name}"
+    return f"Table {self.table_number} at {self.place.name}"
 
 class Printer(models.Model):
   serial_number = models.TextField(max_length=500)
