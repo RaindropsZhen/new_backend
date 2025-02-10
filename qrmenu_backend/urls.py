@@ -30,6 +30,8 @@ urlpatterns = [
     path('api/orders/', views.OrderList.as_view()),
     path('api/orders/<pk>', views.OrderDetail.as_view()),
 
+    path('api/tables/<int:pk>/', views.TableBlockedStatusUpdate.as_view()),
+
     #path('delete_image/', views.delete_image, name='delete_image'),
     path('api/printers/<pk>', views.PrintersDetail.as_view()),
 

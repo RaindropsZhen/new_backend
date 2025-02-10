@@ -58,6 +58,11 @@ class TableDetail(generics.UpdateAPIView, generics.DestroyAPIView):
   serializer_class = serializers.TableSerializer
   queryset = models.Table.objects.all()
 
+class TableBlockedStatusUpdate(generics.UpdateAPIView):
+    permission_classes = [permissions.PlaceOwnerOrReadOnly]
+    queryset = models.Table.objects.all()
+    serializer_class = serializers.TableSerializer
+
 
 class OrderList(generics.ListAPIView):
   serializer_class = serializers.OrderSerializer
