@@ -89,14 +89,11 @@ WSGI_APPLICATION = 'qrmenu_backend.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'suki',
+        'NAME': 'test_dataset',
         'USER': 'root',
         'PASSWORD': 'wzz19971028',
-        'HOST': '43.157.97.20',
+        'HOST': '49.51.169.24',
         'PORT': '3306',
-        'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"
-        }
     }
 }
 
