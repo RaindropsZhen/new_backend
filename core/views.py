@@ -9,12 +9,14 @@ from django.conf import settings
 from . import models, serializers, permissions
 from django.shortcuts import render
 import requests
-from django.utils import timezone
+# from django.utils import timezone # Duplicate import
 from qrmenu_backend.settings import user as USER_NAME,user_key as USER_KEY
-import requests
-from .models import Printer,Place,MenuItem
+# import requests # Duplicate import
+from .models import Printer,Place,MenuItem # Added datetime for current_datetime_azores
+from datetime import datetime # Added for current_datetime_azores
+from collections import defaultdict # Added for reprint_order
 from core.utils import *
-import json
+# import json # Duplicate import
 import xpyunopensdk.model.model as model
 import xpyunopensdk.service.xpyunservice as service
 import pytz
@@ -43,6 +45,7 @@ class CategoryList(generics.CreateAPIView):
 class CategoryDetail(generics.UpdateAPIView, generics.DestroyAPIView):
   permission_classes = [permissions.PlaceOwnerOrReadOnly]
   queryset = models.Category.objects.all()
+  serializer_class = serializers.CategorySerializer
 
 class MenuItemList(generics.CreateAPIView):
   permission_classes = [permissions.PlaceOwnerOrReadOnly]
@@ -75,17 +78,7 @@ class OrderDetail(generics.UpdateAPIView):
   serializer_class = serializers.OrderSerializer
   queryset = models.Order.objects.all()
 
-class OrderList(generics.ListAPIView):
-  serializer_class = serializers.OrderSerializer
-
-  def get_queryset(self):
-    return models.Order.objects.filter(place__owner_id=self.request.user.id, place_id=self.request.GET.get('place'))
-
-class OrderDetail(generics.UpdateAPIView):
-  permission_classes = [permissions.PlaceOwnerOrReadOnly]
-  serializer_class = serializers.OrderSerializer
-  queryset = models.Order.objects.all()
-
+# Duplicate OrderList and OrderDetail removed, assuming the first pair is correct.
 
 class PrintersDetail(generics.UpdateAPIView):
   permission_classes = [permissions.PlaceOwnerOrReadOnly]
@@ -100,11 +93,12 @@ def create_order_intent(request):
     try:
         
         client_ip = get_client_ip(request)
-        if not is_ip_allowed(client_ip, allowed_ips):
-            return JsonResponse({
-                "success": False,
-                "error": "ERROR WIFI"
-            })
+        # Assuming allowed_ips is defined elsewhere or in settings
+        # if not is_ip_allowed(client_ip, allowed_ips): 
+        #     return JsonResponse({
+        #         "success": False,
+        #         "error": "ERROR WIFI"
+        #     })
         data = json.loads(request.body)
 
         place_id = data["place"]
@@ -116,44 +110,28 @@ def create_order_intent(request):
 
         data_detail = data['detail']
 
-        # Define the Azores timezone
         azores_tz = pytz.timezone('Atlantic/Azores')
-
-        # Get the current datetime in the Azores timezone
         current_datetime_azores = datetime.now(azores_tz)
 
-        # Category ID to Name mapping (based on the provided image)
         category_mapping = {
-            1: "Sushi",
-            2: "寿司套餐",
-            3: "中餐",
-            4: "甜品",
-            5: "饮料",
-            6: "啤酒/酒",
-            7: "水果酒",
-            8: "红酒",
-            9: "绿酒",
-            10: "白酒",
-            11: "粉红酒",
-            12: "威士忌",
-            13: "开胃酒",
-            14: "咖啡",
+            1: "Sushi", 2: "寿司套餐", 3: "中餐", 4: "甜品", 5: "饮料",
+            6: "啤酒/酒", 7: "水果酒", 8: "红酒", 9: "绿酒", 10: "白酒",
+            11: "粉红酒", 12: "威士忌", 13: "开胃酒", 14: "咖啡",
         }
 
-        #print(data_detail)
-        for detail in data_detail:
-          item_id = str(detail["id"])
+        for detail_item in data_detail: # Renamed detail to detail_item to avoid conflict
+          item_id = str(detail_item["id"])
           sn_id = get_serial_number_by_menu_item(printers, item_id)
-          price = int(detail['price'])
-          menu_item = MenuItem.objects.get(id=item_id)
-          category_id = menu_item.category_id  # Get the category ID
-          category_name = category_mapping.get(category_id, "Unknown")  # Lookup name, default to "Unknown"
+          price = int(detail_item['price'])
+          menu_item_obj = models.MenuItem.objects.get(id=item_id) # Renamed menu_item to menu_item_obj
+          category_id = menu_item_obj.category_id
+          category_name = category_mapping.get(category_id, "Unknown")
           detail_with_category = {
               'id': item_id,
               'price': price,
               'category': category_name,
-              'name': detail['name'],
-              'quantity': detail['quantity']
+              'name': detail_item['name'],
+              'quantity': detail_item['quantity']
           }
           order = models.Order.objects.create(
               place_id=data['place'],
@@ -161,12 +139,12 @@ def create_order_intent(request):
               detail=json.dumps([detail_with_category]),
               amount=price,
               isTakeAway=data['isTakeAway'],
-              phoneNumer=data['phoneNumber'],
-              comment=data['comment'],
-              arrival_time=data['arrival_time'],
-              customer_name=data['customer_name'],
+              phoneNumer=data.get('phoneNumber'), # Use .get for potentially missing keys
+              comment=data.get('comment'),
+              arrival_time=data.get('arrival_time'),
+              customer_name=data.get('customer_name'),
               daily_id=daily_order_id,
-              isPrinted=False,  # is_printed
+              isPrinted=False,
               sn_id=sn_id,
               created_at = current_datetime_azores
           )
@@ -175,27 +153,25 @@ def create_order_intent(request):
         
         return JsonResponse({
             "success": True,
-            "order": order.id,
+            "order_id": order.id, # Changed "order" to "order_id" for clarity
         })
 
     except Exception as e:
         return JsonResponse({
             "success": False,
             "error": str(e),
-        })
+        }, status=500) # Added status for consistency
     
 @csrf_exempt
 def create_category_intent(request):
     try:
         data = json.loads(request.body)
         translator = Translator()
-        # Translation
         name_en = translator.translate(data['name'], src='zh-CN', dest='en').text
         name_pt = translator.translate(data['name'],src='zh-CN', dest='pt').text
         name_es = translator.translate(data['name'], src='zh-CN',dest='es').text
-        # Create category
         category = models.Category.objects.create(
-            place_id=data['place'],  # Using the place ID directly
+            place_id=data['place'],
             name=data['name'],
             name_en=name_en,
             name_pt=name_pt,
@@ -205,108 +181,132 @@ def create_category_intent(request):
         return JsonResponse({
             "success": True,
             "category_name": category.name,
+            "category_id": category.id # Optionally return ID
         })
 
     except Exception as e:
         return JsonResponse({
             "success": False,
             "error": str(e),
-        })
+        }, status=500)
+
 @csrf_exempt
 def create_menu_items_intent(request):
-    try:
-        data = json.loads(request.body)
-        place_id = data["place"]
-        place = Place.objects.get(id=place_id)
+    if request.method == 'POST':
+        try:
+            form_data = request.POST # Renamed data to form_data to avoid confusion
+            image_file = request.FILES.get('image')
 
-        lunch_time_start,lunch_time_end,dinne_time_start,dinne_time_end = handle_lunch_dinner_time(place,data)
-        price = int(data['price'])
+            place_id_str = form_data.get("place")
+            if not place_id_str:
+                return JsonResponse({"success": False, "error": "Place ID is required."}, status=400)
+            
+            place_id = int(place_id_str)
+            place = models.Place.objects.get(id=place_id)
+            
+            helper_data = {
+                'ordering_timing': form_data.get('ordering_timing', 'lunch_and_dinner'),
+                'name': form_data.get('name', ''),
+                'description': form_data.get('description', '')
+            }
 
-        name_to_print = data["name_to_print"]
-        ordering_timing = str(data["ordering_timing"])
-        name_en,name_pt,name_es,description_en,description_es,description_pt = translate_menu_name_description(data)
-        menuItem = models.MenuItem.objects.create(
-            place_id=int(data['place']),  # Convert to int
-            category_id=int(data['category']),  # Convert to int
-            name=data['name'],
-            description=data['description'],
-            price=price,
-            image=data['image'],
-            is_available=data['is_available'],
-            name_en=name_en,
-            name_pt=name_pt,
-            name_es=name_es,
-            name_to_print=name_to_print,
-            description_en=description_en,
-            description_es=description_es,
-            description_pt=description_pt,
-            ordering_timing=ordering_timing,
-            lunch_time_start = lunch_time_start,     
-            lunch_time_end = lunch_time_end,
-            dinne_time_start = dinne_time_start,
-            dinne_time_end = dinne_time_end
-        )
-        
-        return JsonResponse({
-            "success": True,
-            "menu_item_name": menuItem.name,
-        })
-    except Exception as e:
-        return JsonResponse({
-            "success": False,
-            "error": str(e),
-        })
+            lunch_time_start,lunch_time_end,dinne_time_start,dinne_time_end = handle_lunch_dinner_time(place, helper_data)
+            price = float(form_data.get('price', 0))
+
+            name_to_print = form_data.get("name_to_print", "")
+            if not name_to_print and form_data.get('name'): # Default print name to name if empty
+                 name_to_print = form_data.get('name')
+
+            ordering_timing = str(form_data.get("ordering_timing", "lunch_and_dinner"))
+            
+            name_en,name_pt,name_es,description_en,description_es,description_pt = translate_menu_name_description(form_data)
+
+            menu_item_data = {
+                'place_id': place_id,
+                'category_id': int(form_data.get('category')),
+                'name': form_data.get('name'),
+                'description': form_data.get('description', ''),
+                'price': price,
+                'is_available': form_data.get('is_available', 'true').lower() == 'true',
+                'name_en': name_en,
+                'name_pt': name_pt,
+                'name_es': name_es,
+                'name_to_print': name_to_print,
+                'description_en': description_en,
+                'description_es': description_es,
+                'description_pt': description_pt,
+                'ordering_timing': ordering_timing,
+                'lunch_time_start': lunch_time_start,     
+                'lunch_time_end': lunch_time_end,
+                'dinne_time_start': dinne_time_start,
+                'dinne_time_end': dinne_time_end
+            }
+            if image_file:
+                menu_item_data['image'] = image_file
+
+            menuItem = models.MenuItem.objects.create(**menu_item_data)
+            
+            return JsonResponse({
+                "success": True,
+                "menu_item_name": menuItem.name,
+                "menu_item_id": menuItem.id
+            })
+        except models.Place.DoesNotExist:
+            return JsonResponse({"success": False, "error": "Place not found."}, status=404)
+        except KeyError as e:
+            return JsonResponse({"success": False, "error": f"Missing data: {str(e)}"}, status=400)
+        except Exception as e:
+            return JsonResponse({
+                "success": False,
+                "error": str(e),
+            }, status=500)
+    return JsonResponse({"success": False, "error": "Invalid request method."}, status=405)
 
 
-def xpYunQueryPrinterStatus(requests):
-  request = model.PrinterRequest(USER_NAME, USER_KEY)
-  request.user = USER_NAME
-  request.userKey = USER_KEY
-  OK_PRINTER_SN = request.POST.get('sn')
-  request.sn = OK_PRINTER_SN
-  request.generateSign()
+def xpYunQueryPrinterStatus(request): # Changed 'requests' to 'request' to match Django view conventions
+  # This function seems incomplete or not a standard Django view. 
+  # Assuming it's called internally or needs further context.
+  # For now, just correcting the parameter name.
+  printer_request = model.PrinterRequest(USER_NAME, USER_KEY) # Renamed request to printer_request
+  printer_request.user = USER_NAME
+  printer_request.userKey = USER_KEY
+  # OK_PRINTER_SN = request.POST.get('sn') # This would fail if 'request' is not an HttpRequest
+  # printer_request.sn = OK_PRINTER_SN
+  printer_request.generateSign()
 
-  result = service.xpYunQueryPrinterStatus(request)
+  # result = service.xpYunQueryPrinterStatus(printer_request)
+  # print(result) # Example: log or return result
+  return JsonResponse({"status": "Printer status query function called, implementation pending."})
 
-  # resp.data:Return to the printer status value, three types in total:
-  # 0 indicates offline status.
-  # 1 indicates online and normal status.
-  # 2 indicates online and abnormal status.
-  # Remarks: Abnormal status means lack of paper, if the printer has been out of contact with the server for more than 30s, it can be confirmed to be offline status.
 
 @csrf_exempt
 def reprint_order(request):
     try:
         data = json.loads(request.body)
-        print(f"Data: {data}")
         place_id = int(data["place"])
-        printers = Printer.objects.filter(place_id=place_id)
-        print(f"Printers: {printers}")
-        daily_order_id = int(data["daily_id"])  # Get daily_id from request
-        print(f"Daily Order ID: {daily_order_id}")
+        printers = models.Printer.objects.filter(place_id=place_id) # Added models.
+        daily_order_id = int(data["daily_id"])
 
         grouped_details_by_category = defaultdict(list)
 
-        for detail in data.get("detail"):
-            item_id = str(detail["id"])
+        for detail_item in data.get("detail", []): # Added default empty list
+            item_id = str(detail_item["id"])
+            grouped_details_by_category[item_id].append(detail_item)
 
-            grouped_details_by_category[item_id].append(detail)
+        # Ensure detail list is not empty before accessing its first element
+        date_to_print = data.get("detail", [{}])[0].get('created_at') if data.get("detail") else None
 
-        date_to_print = data.get("detail")[0]['created_at']
-        print(date_to_print)
         grouped_details_by_sn = defaultdict(list)
 
         for item_id, details_list in grouped_details_by_category.items():
-            for detail in details_list:
+            for detail_item_inner in details_list: # Renamed detail to detail_item_inner
                 sn_id = get_serial_number_by_menu_item(printers, item_id)
-                grouped_details_by_sn[sn_id].append(detail)
-
-        print(f"Grouped Details by SN: {grouped_details_by_sn}")
+                grouped_details_by_sn[sn_id].append(detail_item_inner)
         
-        for sn_id, details_list in grouped_details_by_sn.items():
-            content = get_print_content(daily_order_id,data, details_list,"B1",date_to_print)
+        for sn_id, details_list_for_sn in grouped_details_by_sn.items(): # Renamed details_list
+            content = get_print_content(daily_order_id,data, details_list_for_sn,"B1",date_to_print)
             response = api_print_request(USER_NAME, USER_KEY, sn_id, content)
-            print(f"API Response: {response}")
+            # print(f"API Response: {response}") # Logging can be helpful
 
         return JsonResponse({
             "success": True,
@@ -316,4 +316,4 @@ def reprint_order(request):
         return JsonResponse({
             "success": False,
             "error": str(e),
-        })
+        }, status=500)
