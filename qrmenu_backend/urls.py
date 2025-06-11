@@ -1,5 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include, re_path
+from django.conf import settings
+from django.conf.urls.static import static,serve
 
 from django.contrib.auth import views as auth_views
 
@@ -43,8 +45,16 @@ urlpatterns = [
 
     path('reset_password_complete/',auth_views.PasswordResetCompleteView.as_view(), name='password_reset_complete'),
 
+    # re_path(r'^media/(?P<path>,*)$', serve, {'document_root': settings.MEDIA_ROOT}),
+    # The catch-all route will be moved down
+]
 
-    re_path('',views.home),
+# Add media file serving patterns if in DEBUG mode
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
-
+# Add the catch-all frontend route last
+# This ensures it only matches if no other pattern (including media) has matched
+urlpatterns += [
+    re_path(r'^.*$', views.home), # This will serve index.html for any other path
 ]

@@ -138,6 +138,13 @@ STATIC_ROOT = os.path.join(BASE_DIR,'static')
 
 STATIC_URL = '/static/'
 
+# Media files (uploads)
+# MEDIA_URL = '/media/'
+# MEDIA_ROOT = BASE_DIR / 'media_files'
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+#
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
@@ -174,3 +181,4 @@ user_key = "cebc19a4ea8649d7bbd01af798aa50a0"
 # Get sn input from the user
 sn = "743BFFW1G2AAA4A"
 
+DEBUG = True
