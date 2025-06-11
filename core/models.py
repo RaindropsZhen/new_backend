@@ -15,7 +15,7 @@ class Place(models.Model):
 
   owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
   name = models.TextField(max_length=500)
-  image = models.TextField(max_length=500)
+  image = models.ImageField(upload_to='place_images/', blank=True, null=True)
   number_of_tables = models.IntegerField(default=1)
   font = models.TextField(max_length=500, blank=True)
   color = models.TextField(max_length=500, blank=True)
@@ -106,7 +106,7 @@ class MenuItem(models.Model):
   category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="menu_items")
   name = models.TextField(max_length=500)
   price = models.FloatField(default=0)
-  image = models.TextField(max_length=500)
+  image = models.ImageField(upload_to='menu_item_images/', blank=True, null=True)
   is_available = models.BooleanField(default=True)
   name_en = models.TextField(max_length=500,blank=True, null=True)
   name_es = models.TextField(max_length=500,blank=True, null=True)
