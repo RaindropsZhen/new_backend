@@ -18,7 +18,7 @@ class CategorySerializer(serializers.ModelSerializer):
       'place',
       'name_en',
       'name_pt',
-      'name_es',
+      # 'name_es', # Removed Spanish field
       'orders_display'
     )
 
