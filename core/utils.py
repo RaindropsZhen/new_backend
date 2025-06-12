@@ -174,15 +174,22 @@ def handle_lunch_dinner_time(place,data):
 def translate_menu_name_description(data):
 
     translator = Translator()
-    name_en = translator.translate(data['name'], dest='en').text
-    name_pt = translator.translate(data['name'], dest='pt').text
-    name_es = translator.translate(data['name'], dest='es').text
+    name_en = ""
+    name_pt = ""
+    description_en = ""
+    description_pt = ""
 
-    description_en = translator.translate(data['description'], dest='en').text
-    description_es = translator.translate(data['description'], dest='es').text
-    description_pt = translator.translate(data['description'], dest='pt').text
+    # Ensure 'name' and 'description' exist in data to avoid KeyError
+    # and only translate if they are not empty strings.
+    if data.get('name'):
+        name_en = translator.translate(data['name'], dest='en').text
+        name_pt = translator.translate(data['name'], dest='pt').text
+    
+    if data.get('description'):
+        description_en = translator.translate(data['description'], dest='en').text
+        description_pt = translator.translate(data['description'], dest='pt').text
 
-    return name_en,name_pt,name_es,description_en,description_es,description_pt
+    return name_en, name_pt, description_en, description_pt
 
 
 def grouped_details(data,printers):

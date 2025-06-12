@@ -81,10 +81,10 @@ class Printer(models.Model):
 
 class Category(models.Model):
   place = models.ForeignKey(Place, on_delete=models.CASCADE, related_name="categories")
-  name = models.TextField(max_length=500)
-  name_en = models.TextField(max_length=500,blank=True, null=True)
-  name_es = models.TextField(max_length=500,blank=True, null=True)
-  name_pt = models.TextField(max_length=500,blank=True, null=True)
+  name = models.TextField(max_length=500) # Default/Chinese name
+  name_en = models.TextField(max_length=500,blank=True, null=True) # English name
+  # name_es = models.TextField(max_length=500,blank=True, null=True) # Spanish name - REMOVED
+  name_pt = models.TextField(max_length=500,blank=True, null=True) # Portuguese name
   created_at = models.DateTimeField(default=timezone.now)
   orders_display = models.IntegerField(blank=True,null=True)
   def __str__(self):
@@ -108,14 +108,14 @@ class MenuItem(models.Model):
   price = models.FloatField(default=0)
   image = models.ImageField(upload_to='menu_item_images/', blank=True, null=True)
   is_available = models.BooleanField(default=True)
-  name_en = models.TextField(max_length=500,blank=True, null=True)
-  name_es = models.TextField(max_length=500,blank=True, null=True)
-  name_pt = models.TextField(max_length=500,blank=True, null=True)
+  name_en = models.TextField(max_length=500,blank=True, null=True) # English name
+  # name_es = models.TextField(max_length=500,blank=True, null=True) # Spanish name - REMOVED
+  name_pt = models.TextField(max_length=500,blank=True, null=True) # Portuguese name
   name_to_print = models.TextField(max_length=500,blank=True, null=True)
-  description = models.TextField(blank=True, null=True)
-  description_en = models.TextField(blank=True, null=True)
-  description_es = models.TextField(blank=True, null=True)
-  description_pt = models.TextField(blank=True, null=True)
+  description = models.TextField(blank=True, null=True) # Default/Chinese description
+  description_en = models.TextField(blank=True, null=True) # English description
+  # description_es = models.TextField(blank=True, null=True) # Spanish description - REMOVED
+  description_pt = models.TextField(blank=True, null=True) # Portuguese description
   created_at = models.DateTimeField(default=timezone.now)
   ordering_timing = models.TextField(max_length=500, default=lunch_and_dinner,choices=ORDERING_TIMING)
   lunch_time_start = models.IntegerField(null=True, blank=True)
