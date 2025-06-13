@@ -4,9 +4,11 @@ from django.utils import timezone
 from django.db.models import Max
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from rest_framework import generics
+from rest_framework import generics, status, views
+from rest_framework.response import Response
+from django.db import transaction
 from . import models, serializers, permissions
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 import requests
 from qrmenu_backend.settings import user as USER_NAME,user_key as USER_KEY
 from .models import Printer # Removed Place, MenuItem as models.Place etc. is used
@@ -189,20 +191,29 @@ def create_menu_items_intent(request):
             
             place_id = int(place_id_str)
             place = models.Place.objects.get(id=place_id)
+
+            menu_item_name = form_data.get('name')
+            if not menu_item_name: # Checks for None or empty string
+                return JsonResponse({"success": False, "error": "Menu item name is required and cannot be empty."}, status=400)
             
             helper_data = {
                 'ordering_timing': form_data.get('ordering_timing', 'lunch_and_dinner'),
-                'name': form_data.get('name', ''),
+                'name': menu_item_name, # Use the validated name
                 'description': form_data.get('description', '')
             }
 
             lunch_time_start,lunch_time_end,dinne_time_start,dinne_time_end = handle_lunch_dinner_time(place, helper_data)
             price = float(form_data.get('price', 0))
 
-            name_to_print = form_data.get("name_to_print", "")
-            if not name_to_print and form_data.get('name'): # Default print name to name if empty
-                 name_to_print = form_data.get('name')
+            name_to_print_from_form = form_data.get("name_to_print") # Get value, could be None or ""
+            if not name_to_print_from_form: # If None or empty string
+                name_to_print = menu_item_name # Default to the main item name
+            else:
+                name_to_print = name_to_print_from_form
             
+            if name_to_print is None: # Ensure it's at least an empty string if menu_item_name was also somehow None (though validated)
+                name_to_print = ""
+
             # Assuming translate_menu_name_description can take a dict-like object (request.POST)
             # or modify to pass individual fields
             # Adjust translate_menu_name_description to not return/process Spanish if it's a custom util function
@@ -224,12 +235,23 @@ def create_menu_items_intent(request):
             # If translate_menu_name_description is a series of direct calls, those for 'es' would be removed.
             # If it's a utility, that utility needs to be updated.
             
-            name_en, name_pt, description_en, description_pt = translate_menu_name_description(form_data)
+            raw_name_en, raw_name_pt, raw_description_en, raw_description_pt = translate_menu_name_description(form_data)
+
+            # Ensure translated fields are empty strings if None (defensive against unexpected None from translation)
+            name_en = raw_name_en if raw_name_en is not None else ""
+            name_pt = raw_name_pt if raw_name_pt is not None else ""
+            description_en = raw_description_en if raw_description_en is not None else ""
+            description_pt = raw_description_pt if raw_description_pt is not None else ""
+
+            category_id_str = form_data.get("category")
+            if not category_id_str:
+                return JsonResponse({"success": False, "error": "Category ID is required."}, status=400)
+            category_id = int(category_id_str)
 
             menu_item_data = {
                 'place_id': place_id,
-                'category_id': int(form_data.get('category')),
-                'name': form_data.get('name'),
+                'category_id': category_id,
+                'name': menu_item_name, # Use the validated name
                 'description': form_data.get('description', ''),
                 'price': price,
                 'is_available': form_data.get('is_available', 'true').lower() == 'true',
@@ -240,7 +262,7 @@ def create_menu_items_intent(request):
                 'description_en': description_en,
                 # 'description_es' field is removed from model
                 'description_pt': description_pt,
-                'ordering_timing': ordering_timing,
+                'ordering_timing': helper_data['ordering_timing'], # Corrected assignment
                 'lunch_time_start': lunch_time_start,     
                 'lunch_time_end': lunch_time_end,
                 'dinne_time_start': dinne_time_start,
@@ -267,6 +289,49 @@ def create_menu_items_intent(request):
             }, status=500)
     return JsonResponse({"success": False, "error": "Invalid request method."}, status=405)
 
+
+class ReorderCategoriesView(views.APIView):
+    permission_classes = [permissions.IsOwnerOrReadOnly] # Changed to IsOwnerOrReadOnly
+
+    def post(self, request, place_id):
+        place = get_object_or_404(models.Place, id=place_id)
+        self.check_object_permissions(request, place) # Explicitly check object permissions
+
+        # The explicit check below is now handled by self.check_object_permissions and IsOwnerOrReadOnly
+        # if request.user != place.owner:
+        #      return Response({"error": "You do not have permission to reorder categories for this place."},
+        #                     status=status.HTTP_403_FORBIDDEN)
+
+        ordered_category_ids = request.data.get('ordered_category_ids')
+
+        if not isinstance(ordered_category_ids, list):
+            return Response({"error": "ordered_category_ids must be a list."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            with transaction.atomic():
+                # Fetch all categories for the place to ensure IDs are valid and belong to this place
+                existing_categories = {cat.id: cat for cat in models.Category.objects.filter(place=place)}
+                
+                if len(ordered_category_ids) != len(existing_categories):
+                    return Response({"error": "The number of provided category IDs does not match the number of categories for this place."},
+                                    status=status.HTTP_400_BAD_REQUEST)
+
+                for i, category_id in enumerate(ordered_category_ids):
+                    if category_id not in existing_categories:
+                        # This check also implicitly handles if a category_id from another place is sent.
+                        return Response({"error": f"Category with ID {category_id} not found for this place or is invalid."},
+                                        status=status.HTTP_400_BAD_REQUEST)
+                    
+                    category = existing_categories[category_id]
+                    category.orders_display = i + 1 # Changed to i + 1 for 1-based indexing
+                    category.save(update_fields=['orders_display'])
+            
+            return Response({"success": "Categories reordered successfully."}, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({"error": f"An error occurred: {str(e)}"},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @csrf_exempt
 def reprint_order(request):

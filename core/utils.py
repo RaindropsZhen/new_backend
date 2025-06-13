@@ -178,12 +178,26 @@ def translate_menu_name_description(data):
     # Ensure 'name' and 'description' exist in data to avoid KeyError
     # and only translate if they are not empty strings.
     if data.get('name'):
-        name_en = translator.translate(data['name'], dest='en').text
-        name_pt = translator.translate(data['name'], dest='pt').text
+        try:
+            translated_name_en_obj = translator.translate(data['name'], dest='en')
+            name_en = translated_name_en_obj.text if translated_name_en_obj and hasattr(translated_name_en_obj, 'text') else ""
+            
+            translated_name_pt_obj = translator.translate(data['name'], dest='pt')
+            name_pt = translated_name_pt_obj.text if translated_name_pt_obj and hasattr(translated_name_pt_obj, 'text') else ""
+        except Exception as e:
+            print(f"Error translating name: {data.get('name')}. Error: {e}")
+            # Keep name_en, name_pt as ""
     
     if data.get('description'):
-        description_en = translator.translate(data['description'], dest='en').text
-        description_pt = translator.translate(data['description'], dest='pt').text
+        try:
+            translated_desc_en_obj = translator.translate(data['description'], dest='en')
+            description_en = translated_desc_en_obj.text if translated_desc_en_obj and hasattr(translated_desc_en_obj, 'text') else ""
+            
+            translated_desc_pt_obj = translator.translate(data['description'], dest='pt')
+            description_pt = translated_desc_pt_obj.text if translated_desc_pt_obj and hasattr(translated_desc_pt_obj, 'text') else ""
+        except Exception as e:
+            print(f"Error translating description: {data.get('description')}. Error: {e}")
+            # Keep description_en, description_pt as ""
 
     return name_en, name_pt, description_en, description_pt
 

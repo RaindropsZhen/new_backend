@@ -15,6 +15,7 @@ urlpatterns = [
     
     path('api/places/', views.PlaceList.as_view()),
     path('api/places/<pk>', views.PlaceDetail.as_view()),
+    path('api/places/<int:place_id>/categories/reorder/', views.ReorderCategoriesView.as_view(), name='reorder-categories'),
 
     path('api/categories/', views.CategoryList.as_view()),
     path('api/categories/<pk>', views.CategoryDetail.as_view()),
