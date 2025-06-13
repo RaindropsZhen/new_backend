@@ -89,47 +89,7 @@ class PlaceSerializer(serializers.ModelSerializer):
         'dinne_time_end'
       )
 
-# Serializer for the OrderItem model
-class OrderItemSerializer(serializers.ModelSerializer):
-    menu_item_name = serializers.CharField(source='menu_item.name', read_only=True)
-    # You can add more fields from MenuItem if needed, e.g., menu_item_code = serializers.CharField(source='menu_item.code', read_only=True)
-    
-    class Meta:
-        model = models.OrderItem
-        fields = (
-            'id', 
-            'menu_item', 
-            'menu_item_name', 
-            'quantity', 
-            'price_at_time_of_order', 
-            'category_name_at_time_of_order',
-            'total_item_price' # This is a @property in the model
-        )
-        read_only_fields = ('total_item_price',)
-
 class OrderSerializer(serializers.ModelSerializer):
-  items = OrderItemSerializer(many=True, read_only=True)
-  place_name = serializers.CharField(source='place.name', read_only=True)
-
   class Meta:
     model = models.Order
-    fields = (
-        'id', 
-        'place', 
-        'place_name', 
-        'table', 
-        'detail', # Stores JSON summary of items
-        'amount', # Total order amount
-        'status', 
-        'created_at', 
-        'isPrinted', 
-        'isTakeAway', 
-        'phoneNumer', 
-        'comment', 
-        'arrival_time', 
-        'customer_name', 
-        'daily_id', 
-        'sn_id', # Main sn_id for the order (e.g., first item's printer)
-        'items' # Nested list of order items
-    )
-    read_only_fields = ('created_at', 'daily_id', 'items', 'place_name')
+    fields = "__all__"
