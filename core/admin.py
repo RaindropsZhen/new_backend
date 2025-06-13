@@ -1,6 +1,5 @@
 from django.contrib import admin
 from . import models
-from authUser.models import User
 
 # Register your models here.
 admin.site.register(models.Place)
@@ -9,5 +8,3 @@ admin.site.register(models.MenuItem)
 admin.site.register(models.Order)
 admin.site.register(models.Printer)
 admin.site.register(models.Table)
-
-

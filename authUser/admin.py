@@ -11,7 +11,6 @@ class UsersAdmin(admin.ModelAdmin):
         "is_staff",
         "is_superuser",
         "date_joined",
-        "date_joined",
         "last_login",
     )
 

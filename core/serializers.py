@@ -18,7 +18,6 @@ class CategorySerializer(serializers.ModelSerializer):
       'place',
       'name_en',
       'name_pt',
-      # 'name_es', # Removed Spanish field
       'orders_display'
     )
 
@@ -26,7 +25,6 @@ class PrinterSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Printer
         fields = "__all__"
-        #fields = ('id', 'serial_number', 'place','category_name','category','printer_status','printer_status_info')
 
 class TableSerializer(serializers.ModelSerializer):
   class Meta:

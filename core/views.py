@@ -5,20 +5,14 @@ from django.db.models import Max
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import generics
-from django.conf import settings
 from . import models, serializers, permissions
 from django.shortcuts import render
 import requests
-# from django.utils import timezone # Duplicate import
 from qrmenu_backend.settings import user as USER_NAME,user_key as USER_KEY
-# import requests # Duplicate import
-from .models import Printer,Place,MenuItem # Added datetime for current_datetime_azores
+from .models import Printer # Removed Place, MenuItem as models.Place etc. is used
 from datetime import datetime # Added for current_datetime_azores
 from collections import defaultdict # Added for reprint_order
 from core.utils import *
-# import json # Duplicate import
-import xpyunopensdk.model.model as model
-import xpyunopensdk.service.xpyunservice as service
 import pytz
 
 # Create your views here.
@@ -93,12 +87,6 @@ def create_order_intent(request):
     try:
         
         client_ip = get_client_ip(request)
-        # Assuming allowed_ips is defined elsewhere or in settings
-        # if not is_ip_allowed(client_ip, allowed_ips): 
-        #     return JsonResponse({
-        #         "success": False,
-        #         "error": "ERROR WIFI"
-        #     })
         data = json.loads(request.body)
 
         place_id = data["place"]
@@ -169,13 +157,11 @@ def create_category_intent(request):
         translator = Translator()
         name_en = translator.translate(data['name'], src='zh-CN', dest='en').text
         name_pt = translator.translate(data['name'],src='zh-CN', dest='pt').text
-        # name_es = translator.translate(data['name'], src='zh-CN',dest='es').text # Removed Spanish translation
         category = models.Category.objects.create(
             place_id=data['place'],
             name=data['name'],
             name_en=name_en,
             name_pt=name_pt
-            # name_es=name_es # Removed Spanish field
         )
 
         return JsonResponse({
@@ -282,22 +268,6 @@ def create_menu_items_intent(request):
     return JsonResponse({"success": False, "error": "Invalid request method."}, status=405)
 
 
-def xpYunQueryPrinterStatus(request): # Changed 'requests' to 'request' to match Django view conventions
-  # This function seems incomplete or not a standard Django view. 
-  # Assuming it's called internally or needs further context.
-  # For now, just correcting the parameter name.
-  printer_request = model.PrinterRequest(USER_NAME, USER_KEY) # Renamed request to printer_request
-  printer_request.user = USER_NAME
-  printer_request.userKey = USER_KEY
-  # OK_PRINTER_SN = request.POST.get('sn') # This would fail if 'request' is not an HttpRequest
-  # printer_request.sn = OK_PRINTER_SN
-  printer_request.generateSign()
-
-  # result = service.xpYunQueryPrinterStatus(printer_request)
-  # print(result) # Example: log or return result
-  return JsonResponse({"status": "Printer status query function called, implementation pending."})
-
-
 @csrf_exempt
 def reprint_order(request):
     try:
@@ -325,7 +295,6 @@ def reprint_order(request):
         for sn_id, details_list_for_sn in grouped_details_by_sn.items(): # Renamed details_list
             content = get_print_content(daily_order_id,data, details_list_for_sn,"B1",date_to_print)
             response = api_print_request(USER_NAME, USER_KEY, sn_id, content)
-            # print(f"API Response: {response}") # Logging can be helpful
 
         return JsonResponse({
             "success": True,
