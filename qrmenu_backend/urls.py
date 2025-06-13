@@ -19,6 +19,7 @@ urlpatterns = [
 
     path('api/categories/', views.CategoryList.as_view()),
     path('api/categories/<pk>', views.CategoryDetail.as_view()),
+    path('api/categories/<int:category_id>/menu-items/reorder/', views.ReorderMenuItemsView.as_view(), name='reorder-menu-items'),
     path('api/create_category_intent/', views.create_category_intent),
 
     path('api/menu_items/', views.MenuItemList.as_view()),
