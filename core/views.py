@@ -333,6 +333,46 @@ class ReorderCategoriesView(views.APIView):
             return Response({"error": f"An error occurred: {str(e)}"},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+class ReorderMenuItemsView(views.APIView):
+    permission_classes = [permissions.PlaceOwnerOrReadOnly] # This permission needs to be suitable for Category object
+
+    def post(self, request, category_id):
+        category = get_object_or_404(models.Category, id=category_id)
+        
+        # To use PlaceOwnerOrReadOnly, we pass the category object, 
+        # and the permission class will check category.place.owner
+        self.check_object_permissions(request, category)
+
+        ordered_item_ids = request.data.get('ordered_item_ids')
+
+        if not isinstance(ordered_item_ids, list):
+            return Response({"error": "ordered_item_ids must be a list."},
+                            status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            with transaction.atomic():
+                # Fetch all menu items for the category to ensure IDs are valid and belong to this category
+                existing_items = {item.id: item for item in models.MenuItem.objects.filter(category=category)}
+
+                if len(ordered_item_ids) != len(existing_items):
+                    return Response({"error": "The number of provided item IDs does not match the number of items in this category."},
+                                    status=status.HTTP_400_BAD_REQUEST)
+
+                for i, item_id in enumerate(ordered_item_ids):
+                    if item_id not in existing_items:
+                        return Response({"error": f"Menu item with ID {item_id} not found in this category or is invalid."},
+                                        status=status.HTTP_400_BAD_REQUEST)
+                    
+                    menu_item = existing_items[item_id]
+                    menu_item.item_order = i + 1 # 1-indexed
+                    menu_item.save(update_fields=['item_order'])
+            
+            return Response({"success": "Menu items reordered successfully."}, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({"error": f"An error occurred while reordering menu items: {str(e)}"},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 @csrf_exempt
 def reprint_order(request):
     try:

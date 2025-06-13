@@ -7,7 +7,7 @@ class MenuItemSerializer(serializers.ModelSerializer):
     fields = "__all__"
 
 class CategorySerializer(serializers.ModelSerializer):
-  menu_items = MenuItemSerializer(many=True, read_only=True)
+  menu_items = serializers.SerializerMethodField() # Changed for custom sorting
 
   class Meta:
     model = models.Category
@@ -20,6 +20,12 @@ class CategorySerializer(serializers.ModelSerializer):
       'name_pt',
       'orders_display'
     )
+  
+  def get_menu_items(self, instance):
+    # Fetch menu items related to the category instance, ordered by 'item_order'.
+    # 'created_at' can be a secondary sort key for items with no order or same order.
+    menu_items_queryset = instance.menu_items.all().order_by('item_order', 'created_at')
+    return MenuItemSerializer(menu_items_queryset, many=True, context=self.context).data
 
 class PrinterSerializer(serializers.ModelSerializer):
     class Meta:

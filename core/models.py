@@ -119,6 +119,7 @@ class MenuItem(models.Model):
   dinne_time_start = models.IntegerField(null=True, blank=True)
   dinne_time_end = models.IntegerField(null=True, blank=True)
   code = models.TextField(max_length=20,blank=True, null=True)
+  item_order = models.IntegerField(null=True, blank=True) # Field for ordering within category
 
   def __str__(self):
     return "{}/{}".format(self.category, self.name)
