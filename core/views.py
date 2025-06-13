@@ -131,7 +131,8 @@ def create_order_intent(request):
 
             processed_order_item_details_for_json.append({
                 'id': menu_item_id_str,
-                'name': menu_item_obj.name, 
+                'name': menu_item_obj.name,
+                'name_to_print': menu_item_obj.name_to_print or menu_item_obj.name, # Added name_to_print
                 'category_name': category_name,
                 'quantity': quantity,
                 'price': current_item_price 

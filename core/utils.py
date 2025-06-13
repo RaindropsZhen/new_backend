@@ -87,8 +87,10 @@ def format_list_as_string(name_quantity_list,font_size):
 <L><LINE p="23" /><B>菜名</B><HT><B>数量</B><BR>
 --------------------------------<BR>"""
         for item in name_quantity_list:
-            name_to_print = item['name'].split('.')[0] + item['name_to_print']
-            formatted_string += f"<B2>{name_to_print}<HT>{item['quantity']}<BR></B2><BR>"
+            # Prioritize name_to_print if available, otherwise use name.
+            # This directly uses the intended print name, avoiding duplication.
+            display_name = item.get('name_to_print', item.get('name', ''))
+            formatted_string += f"<B2>{display_name}<HT>{item['quantity']}<BR></B2><BR>"
             
         formatted_string += """--------------------------------<BR>
 </L>"""
@@ -97,8 +99,9 @@ def format_list_as_string(name_quantity_list,font_size):
 <L><LINE p="23" /><B>菜名</B><HT><B>数量</B><BR>
 --------------------------------<BR>"""
         for item in name_quantity_list:
-            name_to_print = item['name'].split('.')[0] + item['name_to_print']
-            formatted_string += f"<B>{name_to_print}<HT>{item['quantity']}<BR></B><BR>"
+            # Prioritize name_to_print if available, otherwise use name.
+            display_name = item.get('name_to_print', item.get('name', ''))
+            formatted_string += f"<B>{display_name}<HT>{item['quantity']}<BR></B><BR>"
             
         formatted_string += """--------------------------------<BR>
 </L>"""
