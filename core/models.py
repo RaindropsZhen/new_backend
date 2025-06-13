@@ -148,3 +148,19 @@ class Order(models.Model):
   
   def __str__(self):
     return "{}/{}/${}".format(self.place, self.table, self.amount)
+
+class OrderItem(models.Model):
+    order = models.ForeignKey(Order, related_name='items', on_delete=models.CASCADE)
+    menu_item = models.ForeignKey(MenuItem, on_delete=models.PROTECT) # PROTECT ensures a MenuItem isn't deleted if it's part of an order.
+    quantity = models.IntegerField()
+    price_at_time_of_order = models.FloatField() # Price of one unit of the item
+    category_name_at_time_of_order = models.CharField(max_length=500, blank=True, null=True) # Captures the category name (Chinese, as discussed) at time of order.
+    created_at = models.DateTimeField(auto_now_add=True) # For consistency
+
+    def __str__(self):
+        return f"{self.quantity} x {self.menu_item.name} (Order ID: {self.order.id})"
+
+    @property
+    def total_item_price(self):
+        # Calculates total for this line item (quantity * price_at_time_of_order)
+        return self.quantity * self.price_at_time_of_order

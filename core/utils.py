@@ -104,16 +104,50 @@ def format_list_as_string(name_quantity_list,font_size):
 </L>"""
     return formatted_string
 
-def get_serial_number_by_menu_item(printers, item_id):
-    try:
-        for printer in printers:
-            items_id = printer.menu_item_id
-            items_id = ast.literal_eval(items_id)
-            if int(item_id) in items_id:
-                return printer.serial_number
-    except Exception as e:
-        print(f"Error: {e}")
-        return None
+def get_printer_sn_for_item(printers_queryset, menu_item_object):
+    item_id_to_check = menu_item_object.id
+    item_category_id = menu_item_object.category_id
+
+    # Priority 1: Check for printer assigned to this specific menu_item_id
+    for printer in printers_queryset:
+        if printer.menu_item_id:  # Check if field is not None or empty
+            try:
+                # Ensure items_id_str is a string before literal_eval
+                items_id_str = printer.menu_item_id
+                if not isinstance(items_id_str, str):
+                    # Or handle as an error/warning if it's not expected to be other types
+                    items_id_str = str(items_id_str)
+
+                assigned_item_ids = ast.literal_eval(items_id_str)
+                if isinstance(assigned_item_ids, (list, tuple)) and item_id_to_check in assigned_item_ids:
+                    return printer.serial_number
+            except (ValueError, SyntaxError, TypeError) as e: # Added TypeError
+                print(f"Warning: Malformed or non-string menu_item_id ('{printer.menu_item_id}') for printer SN {printer.serial_number}: {e}")
+                # Continue to the next printer or next check
+    
+    # Priority 2: Check for printer assigned to this item's category_id
+    for printer in printers_queryset:
+        if printer.category:  # This field stores strings like '2,3,4,5,6'
+            try:
+                # Ensure printer.category is a string before split
+                category_str = printer.category
+                if not isinstance(category_str, str):
+                    category_str = str(category_str) # Convert if not string, though it should be
+
+                assigned_category_ids_str = category_str.split(',')
+                assigned_category_ids = [int(cat_id.strip()) for cat_id in assigned_category_ids_str]
+                if item_category_id in assigned_category_ids:
+                    return printer.serial_number
+            except (ValueError, AttributeError, TypeError) as e: # Added TypeError
+                print(f"Warning: Malformed or non-string category ('{printer.category}') for printer SN {printer.serial_number}: {e}")
+                # Continue to the next printer or next check
+
+    # Optional: Add logic here for default printers if no specific match is found
+    # for printer in printers_queryset:
+    #    if not printer.menu_item_id and not printer.category and not printer.category_name:
+    #        return printer.serial_number
+            
+    return None # No specific printer found for this item
 
 
 def update_printer_status(sn_id, new_status):
