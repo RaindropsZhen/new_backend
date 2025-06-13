@@ -4,21 +4,17 @@ from django.utils import timezone
 from django.db.models import Max
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from rest_framework import generics
-from django.conf import settings
+from rest_framework import generics, status, views
+from rest_framework.response import Response
+from django.db import transaction
 from . import models, serializers, permissions
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 import requests
-# from django.utils import timezone # Duplicate import
 from qrmenu_backend.settings import user as USER_NAME,user_key as USER_KEY
-# import requests # Duplicate import
-from .models import Printer,Place,MenuItem # Added datetime for current_datetime_azores
+from .models import Printer # Removed Place, MenuItem as models.Place etc. is used
 from datetime import datetime # Added for current_datetime_azores
 from collections import defaultdict # Added for reprint_order
 from core.utils import *
-# import json # Duplicate import
-import xpyunopensdk.model.model as model
-import xpyunopensdk.service.xpyunservice as service
 import pytz
 
 # Create your views here.
@@ -93,12 +89,6 @@ def create_order_intent(request):
     try:
         
         client_ip = get_client_ip(request)
-        # Assuming allowed_ips is defined elsewhere or in settings
-        # if not is_ip_allowed(client_ip, allowed_ips): 
-        #     return JsonResponse({
-        #         "success": False,
-        #         "error": "ERROR WIFI"
-        #     })
         data = json.loads(request.body)
 
         place_id = data["place"]
@@ -169,13 +159,11 @@ def create_category_intent(request):
         translator = Translator()
         name_en = translator.translate(data['name'], src='zh-CN', dest='en').text
         name_pt = translator.translate(data['name'],src='zh-CN', dest='pt').text
-        # name_es = translator.translate(data['name'], src='zh-CN',dest='es').text # Removed Spanish translation
         category = models.Category.objects.create(
             place_id=data['place'],
             name=data['name'],
             name_en=name_en,
             name_pt=name_pt
-            # name_es=name_es # Removed Spanish field
         )
 
         return JsonResponse({
@@ -203,20 +191,29 @@ def create_menu_items_intent(request):
             
             place_id = int(place_id_str)
             place = models.Place.objects.get(id=place_id)
+
+            menu_item_name = form_data.get('name')
+            if not menu_item_name: # Checks for None or empty string
+                return JsonResponse({"success": False, "error": "Menu item name is required and cannot be empty."}, status=400)
             
             helper_data = {
                 'ordering_timing': form_data.get('ordering_timing', 'lunch_and_dinner'),
-                'name': form_data.get('name', ''),
+                'name': menu_item_name, # Use the validated name
                 'description': form_data.get('description', '')
             }
 
             lunch_time_start,lunch_time_end,dinne_time_start,dinne_time_end = handle_lunch_dinner_time(place, helper_data)
             price = float(form_data.get('price', 0))
 
-            name_to_print = form_data.get("name_to_print", "")
-            if not name_to_print and form_data.get('name'): # Default print name to name if empty
-                 name_to_print = form_data.get('name')
+            name_to_print_from_form = form_data.get("name_to_print") # Get value, could be None or ""
+            if not name_to_print_from_form: # If None or empty string
+                name_to_print = menu_item_name # Default to the main item name
+            else:
+                name_to_print = name_to_print_from_form
             
+            if name_to_print is None: # Ensure it's at least an empty string if menu_item_name was also somehow None (though validated)
+                name_to_print = ""
+
             # Assuming translate_menu_name_description can take a dict-like object (request.POST)
             # or modify to pass individual fields
             # Adjust translate_menu_name_description to not return/process Spanish if it's a custom util function
@@ -238,12 +235,23 @@ def create_menu_items_intent(request):
             # If translate_menu_name_description is a series of direct calls, those for 'es' would be removed.
             # If it's a utility, that utility needs to be updated.
             
-            name_en, name_pt, description_en, description_pt = translate_menu_name_description(form_data)
+            raw_name_en, raw_name_pt, raw_description_en, raw_description_pt = translate_menu_name_description(form_data)
+
+            # Ensure translated fields are empty strings if None (defensive against unexpected None from translation)
+            name_en = raw_name_en if raw_name_en is not None else ""
+            name_pt = raw_name_pt if raw_name_pt is not None else ""
+            description_en = raw_description_en if raw_description_en is not None else ""
+            description_pt = raw_description_pt if raw_description_pt is not None else ""
+
+            category_id_str = form_data.get("category")
+            if not category_id_str:
+                return JsonResponse({"success": False, "error": "Category ID is required."}, status=400)
+            category_id = int(category_id_str)
 
             menu_item_data = {
                 'place_id': place_id,
-                'category_id': int(form_data.get('category')),
-                'name': form_data.get('name'),
+                'category_id': category_id,
+                'name': menu_item_name, # Use the validated name
                 'description': form_data.get('description', ''),
                 'price': price,
                 'is_available': form_data.get('is_available', 'true').lower() == 'true',
@@ -254,7 +262,7 @@ def create_menu_items_intent(request):
                 'description_en': description_en,
                 # 'description_es' field is removed from model
                 'description_pt': description_pt,
-                'ordering_timing': ordering_timing,
+                'ordering_timing': helper_data['ordering_timing'], # Corrected assignment
                 'lunch_time_start': lunch_time_start,     
                 'lunch_time_end': lunch_time_end,
                 'dinne_time_start': dinne_time_start,
@@ -282,21 +290,88 @@ def create_menu_items_intent(request):
     return JsonResponse({"success": False, "error": "Invalid request method."}, status=405)
 
 
-def xpYunQueryPrinterStatus(request): # Changed 'requests' to 'request' to match Django view conventions
-  # This function seems incomplete or not a standard Django view. 
-  # Assuming it's called internally or needs further context.
-  # For now, just correcting the parameter name.
-  printer_request = model.PrinterRequest(USER_NAME, USER_KEY) # Renamed request to printer_request
-  printer_request.user = USER_NAME
-  printer_request.userKey = USER_KEY
-  # OK_PRINTER_SN = request.POST.get('sn') # This would fail if 'request' is not an HttpRequest
-  # printer_request.sn = OK_PRINTER_SN
-  printer_request.generateSign()
+class ReorderCategoriesView(views.APIView):
+    permission_classes = [permissions.IsOwnerOrReadOnly] # Changed to IsOwnerOrReadOnly
 
-  # result = service.xpYunQueryPrinterStatus(printer_request)
-  # print(result) # Example: log or return result
-  return JsonResponse({"status": "Printer status query function called, implementation pending."})
+    def post(self, request, place_id):
+        place = get_object_or_404(models.Place, id=place_id)
+        self.check_object_permissions(request, place) # Explicitly check object permissions
 
+        # The explicit check below is now handled by self.check_object_permissions and IsOwnerOrReadOnly
+        # if request.user != place.owner:
+        #      return Response({"error": "You do not have permission to reorder categories for this place."},
+        #                     status=status.HTTP_403_FORBIDDEN)
+
+        ordered_category_ids = request.data.get('ordered_category_ids')
+
+        if not isinstance(ordered_category_ids, list):
+            return Response({"error": "ordered_category_ids must be a list."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            with transaction.atomic():
+                # Fetch all categories for the place to ensure IDs are valid and belong to this place
+                existing_categories = {cat.id: cat for cat in models.Category.objects.filter(place=place)}
+                
+                if len(ordered_category_ids) != len(existing_categories):
+                    return Response({"error": "The number of provided category IDs does not match the number of categories for this place."},
+                                    status=status.HTTP_400_BAD_REQUEST)
+
+                for i, category_id in enumerate(ordered_category_ids):
+                    if category_id not in existing_categories:
+                        # This check also implicitly handles if a category_id from another place is sent.
+                        return Response({"error": f"Category with ID {category_id} not found for this place or is invalid."},
+                                        status=status.HTTP_400_BAD_REQUEST)
+                    
+                    category = existing_categories[category_id]
+                    category.orders_display = i + 1 # Changed to i + 1 for 1-based indexing
+                    category.save(update_fields=['orders_display'])
+            
+            return Response({"success": "Categories reordered successfully."}, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({"error": f"An error occurred: {str(e)}"},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class ReorderMenuItemsView(views.APIView):
+    permission_classes = [permissions.PlaceOwnerOrReadOnly] # This permission needs to be suitable for Category object
+
+    def post(self, request, category_id):
+        category = get_object_or_404(models.Category, id=category_id)
+        
+        # To use PlaceOwnerOrReadOnly, we pass the category object, 
+        # and the permission class will check category.place.owner
+        self.check_object_permissions(request, category)
+
+        ordered_item_ids = request.data.get('ordered_item_ids')
+
+        if not isinstance(ordered_item_ids, list):
+            return Response({"error": "ordered_item_ids must be a list."},
+                            status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            with transaction.atomic():
+                # Fetch all menu items for the category to ensure IDs are valid and belong to this category
+                existing_items = {item.id: item for item in models.MenuItem.objects.filter(category=category)}
+
+                if len(ordered_item_ids) != len(existing_items):
+                    return Response({"error": "The number of provided item IDs does not match the number of items in this category."},
+                                    status=status.HTTP_400_BAD_REQUEST)
+
+                for i, item_id in enumerate(ordered_item_ids):
+                    if item_id not in existing_items:
+                        return Response({"error": f"Menu item with ID {item_id} not found in this category or is invalid."},
+                                        status=status.HTTP_400_BAD_REQUEST)
+                    
+                    menu_item = existing_items[item_id]
+                    menu_item.item_order = i + 1 # 1-indexed
+                    menu_item.save(update_fields=['item_order'])
+            
+            return Response({"success": "Menu items reordered successfully."}, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({"error": f"An error occurred while reordering menu items: {str(e)}"},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @csrf_exempt
 def reprint_order(request):
@@ -325,7 +400,6 @@ def reprint_order(request):
         for sn_id, details_list_for_sn in grouped_details_by_sn.items(): # Renamed details_list
             content = get_print_content(daily_order_id,data, details_list_for_sn,"B1",date_to_print)
             response = api_print_request(USER_NAME, USER_KEY, sn_id, content)
-            # print(f"API Response: {response}") # Logging can be helpful
 
         return JsonResponse({
             "success": True,

@@ -1,5 +1,4 @@
 from django.db import models
-# from django.contrib.auth.models import User
 from django.utils import timezone
 from django.conf import settings
 
@@ -83,7 +82,6 @@ class Category(models.Model):
   place = models.ForeignKey(Place, on_delete=models.CASCADE, related_name="categories")
   name = models.TextField(max_length=500) # Default/Chinese name
   name_en = models.TextField(max_length=500,blank=True, null=True) # English name
-  # name_es = models.TextField(max_length=500,blank=True, null=True) # Spanish name - REMOVED
   name_pt = models.TextField(max_length=500,blank=True, null=True) # Portuguese name
   created_at = models.DateTimeField(default=timezone.now)
   orders_display = models.IntegerField(blank=True,null=True)
@@ -109,12 +107,10 @@ class MenuItem(models.Model):
   image = models.ImageField(upload_to='menu_item_images/', blank=True, null=True)
   is_available = models.BooleanField(default=True)
   name_en = models.TextField(max_length=500,blank=True, null=True) # English name
-  # name_es = models.TextField(max_length=500,blank=True, null=True) # Spanish name - REMOVED
   name_pt = models.TextField(max_length=500,blank=True, null=True) # Portuguese name
   name_to_print = models.TextField(max_length=500,blank=True, null=True)
   description = models.TextField(blank=True, null=True) # Default/Chinese description
   description_en = models.TextField(blank=True, null=True) # English description
-  # description_es = models.TextField(blank=True, null=True) # Spanish description - REMOVED
   description_pt = models.TextField(blank=True, null=True) # Portuguese description
   created_at = models.DateTimeField(default=timezone.now)
   ordering_timing = models.TextField(max_length=500, default=lunch_and_dinner,choices=ORDERING_TIMING)
@@ -123,6 +119,7 @@ class MenuItem(models.Model):
   dinne_time_start = models.IntegerField(null=True, blank=True)
   dinne_time_end = models.IntegerField(null=True, blank=True)
   code = models.TextField(max_length=20,blank=True, null=True)
+  item_order = models.IntegerField(null=True, blank=True) # Field for ordering within category
 
   def __str__(self):
     return "{}/{}".format(self.category, self.name)

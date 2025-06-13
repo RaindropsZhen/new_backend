@@ -7,7 +7,7 @@ class MenuItemSerializer(serializers.ModelSerializer):
     fields = "__all__"
 
 class CategorySerializer(serializers.ModelSerializer):
-  menu_items = MenuItemSerializer(many=True, read_only=True)
+  menu_items = serializers.SerializerMethodField() # Changed for custom sorting
 
   class Meta:
     model = models.Category
@@ -18,15 +18,19 @@ class CategorySerializer(serializers.ModelSerializer):
       'place',
       'name_en',
       'name_pt',
-      # 'name_es', # Removed Spanish field
       'orders_display'
     )
+  
+  def get_menu_items(self, instance):
+    # Fetch menu items related to the category instance, ordered by 'item_order'.
+    # 'created_at' can be a secondary sort key for items with no order or same order.
+    menu_items_queryset = instance.menu_items.all().order_by('item_order', 'created_at')
+    return MenuItemSerializer(menu_items_queryset, many=True, context=self.context).data
 
 class PrinterSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Printer
         fields = "__all__"
-        #fields = ('id', 'serial_number', 'place','category_name','category','printer_status','printer_status_info')
 
 class TableSerializer(serializers.ModelSerializer):
   class Meta:
@@ -34,7 +38,7 @@ class TableSerializer(serializers.ModelSerializer):
     fields = ('id', 'place', 'table_number', 'last_ordering_time', 'number_people', 'created_at', 'blocked')
 
 class PlaceDetailSerializer(serializers.ModelSerializer):
-  categories = CategorySerializer(many=True, read_only=True)
+  categories = serializers.SerializerMethodField() # Updated for custom sorting
   printers = PrinterSerializer(many=True)
   tables = TableSerializer(many=True)
   class Meta:
@@ -44,7 +48,7 @@ class PlaceDetailSerializer(serializers.ModelSerializer):
       'name', 
       'image', 
       'number_of_tables', 
-      'categories',
+      'categories', # Will use the SerializerMethodField
       'printers',
       'place_type',
       'ordering_limit_interval',
@@ -54,6 +58,20 @@ class PlaceDetailSerializer(serializers.ModelSerializer):
       'dinne_time_start',
       'dinne_time_end'
     )
+
+  def get_categories(self, instance):
+    # Fetch categories related to the place instance,
+    # ordered by 'orders_display' (ascending, nulls typically first or last depending on DB).
+    # 'created_at' is a secondary sort key for consistent ordering among items with same 'orders_display' or null.
+    # Using .order_by('orders_display', 'created_at') ensures that nulls in orders_display are handled consistently
+    # (usually appearing first in PostgreSQL, last in MySQL/SQLite unless explicitly handled with .asc(nulls_first=True) or similar,
+    # but Django's ORM tries to provide a consistent behavior).
+    # If orders_display can be null and a specific nulls ordering is needed, more complex expressions might be required
+    # e.g. from django.db.models.functions import Coalesce, Value
+    # .order_by(Coalesce('orders_display', Value(999999)), 'created_at') # to put nulls last
+    categories_queryset = instance.categories.all().order_by('orders_display', 'created_at')
+    # Pass the current serializer context, which might be needed by CategorySerializer if it uses context-dependent fields
+    return CategorySerializer(categories_queryset, many=True, context=self.context).data
 
 class PlaceSerializer(serializers.ModelSerializer):
   class Meta:
