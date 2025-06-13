@@ -87,70 +87,192 @@ def home(request):
 @csrf_exempt
 def create_order_intent(request):
     try:
+        if not request.body:
+            return JsonResponse({"success": False, "error": "Request body is empty."}, status=400)
         
-        client_ip = get_client_ip(request)
-        data = json.loads(request.body)
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError as e:
+            # For debugging, you might want to log request.body here
+            # import logging
+            # logger = logging.getLogger(__name__)
+            # logger.error(f"JSONDecodeError: {str(e)} - Request body: {request.body[:500]}")
+            return JsonResponse({"success": False, "error": f"Invalid JSON format in request body: {str(e)}"}, status=400)
 
-        place_id = data["place"]
-        printers = Printer.objects.filter(place_id=place_id)
+        place_id = data.get("place")
+        if place_id is None:
+            return JsonResponse({"success": False, "error": "Missing 'place' key in request data."}, status=400)
+        
+        # Validate place_id
+        try:
+            place = models.Place.objects.get(id=place_id)
+        except models.Place.DoesNotExist:
+            return JsonResponse({"success": False, "error": "Place not found."}, status=404)
+
         today = timezone.now().date()
-        max_id = models.Order.objects.filter(created_at__date=today).aggregate(Max('daily_id'))['daily_id__max'] or 0
-
+        # Ensure daily_id is scoped per place
+        max_daily_id_result = models.Order.objects.filter(place_id=place_id, created_at__date=today).aggregate(Max('daily_id'))
+        max_id = max_daily_id_result['daily_id__max'] or 0
         daily_order_id = max_id + 1
 
-        data_detail = data['detail']
+        order_items_data_from_request = data.get('detail', []) 
+        
+        if not order_items_data_from_request:
+            return JsonResponse({"success": False, "error": "Order must contain at least one item."}, status=400)
 
-        azores_tz = pytz.timezone('Atlantic/Azores')
-        current_datetime_azores = datetime.now(azores_tz)
+        total_order_amount = 0
+        processed_order_item_details_for_json = [] # For storing in Order.detail (summary)
+        
+        # Temporary list to hold validated menu_item_obj and quantity for OrderItem creation
+        validated_items_for_order = []
 
-        category_mapping = {
-            1: "Sushi", 2: "寿司套餐", 3: "中餐", 4: "甜品", 5: "饮料",
-            6: "啤酒/酒", 7: "水果酒", 8: "红酒", 9: "绿酒", 10: "白酒",
-            11: "粉红酒", 12: "威士忌", 13: "开胃酒", 14: "咖啡",
-        }
+        # First loop: Validate items, calculate total amount, prepare details for Order.detail
+        for item_data in order_items_data_from_request:
+            menu_item_id = str(item_data.get("id"))
+            quantity = int(item_data.get('quantity', 0))
+            price_from_request = float(item_data.get('price', 0)) # Price per unit from frontend
 
-        for detail_item in data_detail: # Renamed detail to detail_item to avoid conflict
-          item_id = str(detail_item["id"])
-          sn_id = get_serial_number_by_menu_item(printers, item_id)
-          price = int(detail_item['price'])
-          menu_item_obj = models.MenuItem.objects.get(id=item_id) # Renamed menu_item to menu_item_obj
-          category_id = menu_item_obj.category_id
-          category_name = category_mapping.get(category_id, "Unknown")
-          detail_with_category = {
-              'id': item_id,
-              'price': price,
-              'category': category_name,
-              'name': detail_item['name'],
-              'quantity': detail_item['quantity']
-          }
-          order = models.Order.objects.create(
-              place_id=data['place'],
-              table=data['table'],
-              detail=json.dumps([detail_with_category]),
-              amount=price,
-              isTakeAway=data['isTakeAway'],
-              phoneNumer=data.get('phoneNumber'), # Use .get for potentially missing keys
-              comment=data.get('comment'),
-              arrival_time=data.get('arrival_time'),
-              customer_name=data.get('customer_name'),
-              daily_id=daily_order_id,
-              isPrinted=False,
-              sn_id=sn_id,
-              created_at = current_datetime_azores
-          )
-        table_number = data["table"]
-        update_last_ordering_time(place_id,table_number)
+            if quantity <= 0:
+                return JsonResponse({"success": False, "error": f"Quantity for item id {menu_item_id} must be positive."}, status=400)
+
+            try:
+                menu_item_obj = models.MenuItem.objects.get(id=menu_item_id, place_id=place_id)
+            except models.MenuItem.DoesNotExist:
+                return JsonResponse({"success": False, "error": f"MenuItem with id {menu_item_id} not found for this place."}, status=404)
+            
+            # Using price from database for calculation is safer, but for now, respecting frontend price.
+            # Consider validating frontend price against db price if business rules require.
+            # current_item_price = menu_item_obj.price 
+            current_item_price = price_from_request 
+
+            total_order_amount += current_item_price * quantity
+            
+            category_name = menu_item_obj.category.name # Using Chinese name from related Category object
+
+            processed_order_item_details_for_json.append({
+                'id': menu_item_id,
+                'name': menu_item_obj.name, 
+                'category_name': category_name,
+                'quantity': quantity,
+                'price': current_item_price 
+            })
+            
+            validated_items_for_order.append({
+                'menu_item_obj': menu_item_obj,
+                'quantity': quantity,
+                'price_at_time_of_order': current_item_price,
+                'category_name_at_time_of_order': category_name
+            })
+
+        # Determine main_sn_id for the Order (e.g., based on first item or a general printer)
+        # This logic might need to be more sophisticated if orders are split across printers.
+        printers_for_place = models.Printer.objects.filter(place_id=place_id)
+        main_sn_id = None
+        if validated_items_for_order:
+            first_item_menu_obj = validated_items_for_order[0]['menu_item_obj']
+            main_sn_id = get_printer_sn_for_item(printers_for_place, first_item_menu_obj) # Use new function
+
+
+        # Create the single Order object
+        with transaction.atomic(): # Ensure all or nothing for order and items
+            order = models.Order.objects.create(
+                place=place, # Use the fetched Place instance
+                table=data['table'],
+                detail=json.dumps(processed_order_item_details_for_json), 
+                amount=total_order_amount, 
+                isTakeAway=data.get('isTakeAway', False),
+                phoneNumer=data.get('phoneNumber'), 
+                comment=data.get('comment'),
+                arrival_time=data.get('arrival_time'),
+                customer_name=data.get('customer_name'),
+                daily_id=daily_order_id,
+                isPrinted=False, 
+                sn_id=main_sn_id 
+                # created_at is auto_now_add=True
+            )
+
+            # Second loop: Create OrderItem instances
+            for item_to_create in validated_items_for_order:
+                models.OrderItem.objects.create(
+                    order=order,
+                    menu_item=item_to_create['menu_item_obj'],
+                    quantity=item_to_create['quantity'],
+                    price_at_time_of_order=item_to_create['price_at_time_of_order'],
+                    category_name_at_time_of_order=item_to_create['category_name_at_time_of_order']
+                )
+            
+            # START: New Printing Logic
+            grouped_items_for_printing = defaultdict(list)
+            # printers_for_place is already fetched above
+
+            for item_instance in order.items.all(): # Iterate through created OrderItems
+                menu_item_obj = item_instance.menu_item
+                sn_id = get_printer_sn_for_item(printers_for_place, menu_item_obj)
+                
+                if sn_id: # Only try to print if a printer is found
+                    name_to_print_for_item = menu_item_obj.name_to_print if menu_item_obj.name_to_print else menu_item_obj.name
+                    
+                    item_detail_for_print = {
+                        'name': menu_item_obj.name, 
+                        'name_to_print': name_to_print_for_item, 
+                        'quantity': item_instance.quantity
+                        # Add other fields if get_print_content or format_list_as_string uses them
+                    }
+                    grouped_items_for_printing[sn_id].append(item_detail_for_print)
+            
+            print_jobs_successful = True # Assume success initially
+            if not grouped_items_for_printing: # If no items were matched to any printer
+                print_jobs_successful = False # Or handle as "nothing to print"
+
+            if grouped_items_for_printing:
+                datetime_to_print_str = order.created_at.strftime("%Y-%m-%d %H:%M:%S")
+
+                for sn_id, items_for_this_printer in grouped_items_for_printing.items():
+                    # Assuming 'B1' is a default font size for now. This might need to be configurable.
+                    print_content = get_print_content(order.daily_id, data, items_for_this_printer, "B1", datetime_to_print_str)
+                    try:
+                        print_response = api_print_request(USER_NAME, USER_KEY, sn_id, print_content)
+                        # Check Xpyun success: typically ret=0 and data.ok[0]=="0" or similar
+                        # This check might need adjustment based on exact Xpyun API response structure for success.
+                        if not (print_response.get("ret") == 0 and \
+                                isinstance(print_response.get("data"), dict) and \
+                                print_response.get("data", {}).get("ok") and \
+                                isinstance(print_response.get("data").get("ok"), list) and \
+                                len(print_response.get("data").get("ok")) > 0 and \
+                                print_response.get("data").get("ok")[0] == "0"):
+                            print(f"Warning: Print job to SN {sn_id} might have failed or had unexpected response. Response: {print_response}")
+                            print_jobs_successful = False 
+                    except Exception as print_e:
+                        print(f"Error sending print job to SN {sn_id}: {print_e}")
+                        print_jobs_successful = False 
+
+            if print_jobs_successful and grouped_items_for_printing:
+                order.isPrinted = True
+            else:
+                # If nothing to print, or if any print job failed, mark as not printed or partially printed.
+                # For simplicity, keeping it False if any issue or nothing to print.
+                order.isPrinted = False 
+            order.save(update_fields=['isPrinted'])
+            # END: New Printing Logic
+
+        update_last_ordering_time(place_id, data["table"]) # Assuming this function is correct
         
         return JsonResponse({
             "success": True,
-            "order_id": order.id, # Changed "order" to "order_id" for clarity
+            "order_id": order.id,
         })
 
+    except KeyError as e:
+        return JsonResponse({"success": False, "error": f"Missing key in request data: {str(e)}"}, status=400)
     except Exception as e:
+        # Log the full error for debugging on the server
+        # import logging
+        # logger = logging.getLogger(__name__)
+        # logger.error(f"Error in create_order_intent: {str(e)}", exc_info=True)
         return JsonResponse({
             "success": False,
-            "error": str(e),
-        }, status=500) # Added status for consistency
+            "error": f"An unexpected error occurred: {str(e)}", 
+        }, status=500)
     
 @csrf_exempt
 def create_category_intent(request):
