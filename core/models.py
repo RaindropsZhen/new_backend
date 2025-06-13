@@ -26,7 +26,7 @@ class Place(models.Model):
   backgroundColorright = models.TextField(max_length=500,default='#25008E8',blank=True,null=True)
   place_type = models.TextField(max_length=500, default=normal,choices=PLACE_TYPES)
   ordering_limit_interval = models.IntegerField(default=300,null=True, blank=True)
-  created_at = models.DateTimeField(default=timezone.now)
+  created_at = models.DateTimeField(auto_now_add=True)
   lunch_time_start = models.IntegerField(null=True, blank=True)
   lunch_time_end = models.IntegerField(null=True, blank=True)
   dinne_time_start = models.IntegerField(null=True, blank=True)
@@ -61,7 +61,7 @@ class Table(models.Model):
   table_number = models.IntegerField()
   last_ordering_time = models.IntegerField(null=True, blank=True)
   number_people = models.IntegerField(null=True,blank=True,default=0)
-  created_at = models.DateTimeField(default=timezone.now)
+  created_at = models.DateTimeField(auto_now_add=True)
   blocked = models.BooleanField(default=True)
 
   def __str__(self):
@@ -75,7 +75,7 @@ class Printer(models.Model):
   menu_item_id = models.TextField(max_length=500,default=None,blank=True, null=True)
   printer_status = models.TextField(max_length=500,blank=True, null=True)
   printer_status_info = models.TextField(max_length=500,blank=True, null=True)
-  created_at = models.DateTimeField(default=timezone.now)
+  created_at = models.DateTimeField(auto_now_add=True)
   
 
 class Category(models.Model):
@@ -83,7 +83,7 @@ class Category(models.Model):
   name = models.TextField(max_length=500) # Default/Chinese name
   name_en = models.TextField(max_length=500,blank=True, null=True) # English name
   name_pt = models.TextField(max_length=500,blank=True, null=True) # Portuguese name
-  created_at = models.DateTimeField(default=timezone.now)
+  created_at = models.DateTimeField(auto_now_add=True)
   orders_display = models.IntegerField(blank=True,null=True)
   def __str__(self):
     return "{}/{}".format(self.place, self.name)
@@ -112,7 +112,7 @@ class MenuItem(models.Model):
   description = models.TextField(blank=True, null=True) # Default/Chinese description
   description_en = models.TextField(blank=True, null=True) # English description
   description_pt = models.TextField(blank=True, null=True) # Portuguese description
-  created_at = models.DateTimeField(default=timezone.now)
+  created_at = models.DateTimeField(auto_now_add=True)
   ordering_timing = models.TextField(max_length=500, default=lunch_and_dinner,choices=ORDERING_TIMING)
   lunch_time_start = models.IntegerField(null=True, blank=True)
   lunch_time_end = models.IntegerField(null=True, blank=True)
@@ -136,7 +136,7 @@ class Order(models.Model):
   detail = models.TextField()
   amount = models.IntegerField()
   status = models.TextField(max_length=500, choices=STATUSES, default=PROCESSING_STATUS)
-  created_at = models.DateTimeField(default=timezone.now)
+  created_at = models.DateTimeField(auto_now_add=True)
   isPrinted = models.BooleanField(default=False)
   isTakeAway = models.BooleanField(default=False) 
   phoneNumer = models.IntegerField(blank=True, null=True)
