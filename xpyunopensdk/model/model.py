@@ -69,7 +69,7 @@ class SetVoiceTypeRequest(RestRequest):
     # printer serial number
     sn = ""
 
-    # 
+    #
     voiceType = 0
 
 

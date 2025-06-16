@@ -3,12 +3,13 @@
  @param source - the string for sign
  @return
 """
+
 import hashlib
 import time
 
 
 def sign(source: str):
-    sha = hashlib.sha1(source.encode('utf-8'))
+    sha = hashlib.sha1(source.encode("utf-8"))
     signature = sha.hexdigest()
     return signature
 
@@ -17,6 +18,7 @@ def sign(source: str):
 def getMillisecond():
     t = time.time()
     return int(round(t * 1000))
+
 
 # repeat the string to specific times
 def strRepeat(str, times):

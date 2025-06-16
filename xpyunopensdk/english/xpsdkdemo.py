@@ -24,6 +24,7 @@ OK_PRINTER_SN = "XXXXXXXXXXXXXXXX"
 
 # OK_PRINTER_SN = "XXXXXXXXXXXXXXXX"  # label printer
 
+
 # add printers in batch
 def addPrintersTest():
     request = model.AddPrinterRequest(USER_NAME, USER_KEY)

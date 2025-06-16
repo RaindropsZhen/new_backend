@@ -1,7 +1,7 @@
 import xpyunopensdk.model.model as model
 import xpyunopensdk.service.httpclient as httpclient
 
-BASE_URL = 'https://open.xpyun.net/api/openapi'
+BASE_URL = "https://open.xpyun.net/api/openapi"
 
 
 def xpYunPostJson(url, jsonData):
@@ -48,8 +48,9 @@ def xpYunSetVoiceType(restRequest):
 
 
 # print receipt
-# @param restRequest 
+# @param restRequest
 # @return
+
 
 def xpYunPrint(restRequest):
     url = BASE_URL + "/xprinter/print"
@@ -69,6 +70,7 @@ def xpYunPrint(restRequest):
 # @param restRequest
 # @return
 
+
 def xpYunPrintLabel(restRequest):
     url = BASE_URL + "/xprinter/printLabel"
     jsonData = {
@@ -87,6 +89,7 @@ def xpYunPrintLabel(restRequest):
 # @param restRequest
 # @return
 
+
 def xpYunDelPrinters(restRequest):
     url = BASE_URL + "/xprinter/delPrinters"
     jsonData = {
@@ -95,7 +98,7 @@ def xpYunDelPrinters(restRequest):
         "snlist": restRequest.snlist,
         "sign": restRequest.sign,
         "debug": restRequest.debug,
-        "timestamp": restRequest.timestamp
+        "timestamp": restRequest.timestamp,
     }
     return xpYunPostJson(url, jsonData)
 
@@ -103,6 +106,7 @@ def xpYunDelPrinters(restRequest):
 # modify information of your printer
 # @param restRequest
 # @return
+
 
 def xpYunUpdatePrinter(restRequest):
     url = BASE_URL + "/xprinter/updPrinter"
@@ -115,7 +119,7 @@ def xpYunUpdatePrinter(restRequest):
         "idcode": restRequest.idcode,
         "sign": restRequest.sign,
         "debug": restRequest.debug,
-        "timestamp": restRequest.timestamp
+        "timestamp": restRequest.timestamp,
     }
     return xpYunPostJson(url, jsonData)
 
@@ -123,6 +127,7 @@ def xpYunUpdatePrinter(restRequest):
 # delete printing task queue of a printer
 # @param restRequest
 # @return
+
 
 def xpYunDelPrinterQueue(restRequest):
     url = BASE_URL + "/xprinter/delPrinterQueue"
@@ -132,7 +137,7 @@ def xpYunDelPrinterQueue(restRequest):
         "sn": restRequest.sn,
         "sign": restRequest.sign,
         "debug": restRequest.debug,
-        "timestamp": restRequest.timestamp
+        "timestamp": restRequest.timestamp,
     }
     return xpYunPostJson(url, jsonData)
 
@@ -140,6 +145,7 @@ def xpYunDelPrinterQueue(restRequest):
 # check if the order is printed successfully
 # @param restRequest
 # @return
+
 
 def xpYunQueryOrderState(restRequest):
     url = BASE_URL + "/xprinter/queryOrderState"
@@ -150,7 +156,7 @@ def xpYunQueryOrderState(restRequest):
         "sign": restRequest.sign,
         "debug": restRequest.debug,
         "orderId": restRequest.orderId,
-        "timestamp": restRequest.timestamp
+        "timestamp": restRequest.timestamp,
     }
     return xpYunPostJson(url, jsonData)
 
@@ -158,6 +164,7 @@ def xpYunQueryOrderState(restRequest):
 # query order statistics for printer on a certain day
 # @param restRequest
 # @return
+
 
 def xpYunQueryOrderStatis(restRequest):
     url = BASE_URL + "/xprinter/queryOrderStatis"
@@ -168,16 +175,17 @@ def xpYunQueryOrderStatis(restRequest):
         "sign": restRequest.sign,
         "debug": restRequest.debug,
         "date": restRequest.date,
-        "timestamp": restRequest.timestamp
+        "timestamp": restRequest.timestamp,
     }
     return xpYunPostJson(url, jsonData)
 
 
-# query status of printer 
+# query status of printer
 # 0 indicates offline status; 1 indicates online and normal status; 2 indicates online and abnormal status
 # Remarks: Abnormal status means lack of paper, if the printer has been out of contact with the server for more than 30s, it can be confirmed to be offline status.
 # @param restRequest
 # @return
+
 
 def xpYunQueryPrinterStatus(restRequest):
     url = BASE_URL + "/xprinter/queryPrinterStatus"
@@ -187,7 +195,7 @@ def xpYunQueryPrinterStatus(restRequest):
         "sn": restRequest.sn,
         "sign": restRequest.sign,
         "debug": restRequest.debug,
-        "timestamp": restRequest.timestamp
+        "timestamp": restRequest.timestamp,
     }
 
     return xpYunPostJson(url, jsonData)
@@ -199,6 +207,7 @@ def xpYunQueryPrinterStatus(restRequest):
 # @param restRequest
 # @return
 
+
 def xpYunQueryPrintersStatus(restRequest):
     url = BASE_URL + "/xprinter/queryPrintersStatus"
     jsonData = {
@@ -207,7 +216,7 @@ def xpYunQueryPrintersStatus(restRequest):
         "sn": restRequest.sn,
         "sign": restRequest.sign,
         "debug": restRequest.debug,
-        "timestamp": restRequest.timestamp
+        "timestamp": restRequest.timestamp,
     }
 
     return xpYunPostJson(url, jsonData)
@@ -216,6 +225,7 @@ def xpYunQueryPrintersStatus(restRequest):
 # cloud speaker play voice
 # @param restRequest - 播放语音信息
 # @return
+
 
 def xpYunPlayVoice(restRequest):
     url = BASE_URL + "/xprinter/playVoice"
@@ -228,7 +238,7 @@ def xpYunPlayVoice(restRequest):
         "money": restRequest.money,
         "sign": restRequest.sign,
         "debug": restRequest.debug,
-        "timestamp": restRequest.timestamp
+        "timestamp": restRequest.timestamp,
     }
 
     return xpYunPostJson(url, jsonData)
@@ -238,6 +248,7 @@ def xpYunPlayVoice(restRequest):
 # POS instruction
 # @param restRequest - The POS instruction of byte [] is encrypted by Base64
 # @return
+
 
 def xpYunPos(restRequest):
     url = BASE_URL + "/xprinter/pos"
@@ -257,6 +268,7 @@ def xpYunPos(restRequest):
 # @param restRequest - Cash box control information
 # @return
 
+
 def xpYunControlBox(restRequest):
     url = BASE_URL + "/xprinter/controlBox"
     jsonData = {
@@ -265,6 +277,6 @@ def xpYunControlBox(restRequest):
         "sn": restRequest.sn,
         "sign": restRequest.sign,
         "debug": restRequest.debug,
-        "timestamp": restRequest.timestamp
+        "timestamp": restRequest.timestamp,
     }
     return xpYunPostJson(url, jsonData)

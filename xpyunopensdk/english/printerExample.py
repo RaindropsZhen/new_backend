@@ -1,13 +1,13 @@
-import xpyunopensdk.model.model as model
-import xpyunopensdk.util.xputil as util
-import xpyunopensdk.service.xpyunservice as service
 import xpyunopensdk.formatter.note_formatter as formatter
+import xpyunopensdk.model.model as model
+import xpyunopensdk.service.xpyunservice as service
+import xpyunopensdk.util.xputil as util
 
 USER_NAME = "XXXXXXXXXXXXXXXX"
 USER_KEY = "XXXXXXXXXXXXXXXX"
 OK_PRINTER_SN = "XXXXXXXXXXXXXXXX"  # 小票机
 
-#OK_PRINTER_SN = "XXXXXXXXXXXXXXXX"  # 标签机
+# OK_PRINTER_SN = "XXXXXXXXXXXXXXXX"  # 标签机
 
 
 # sample for receipt using font and alignment in nest,don't support money broadcast
@@ -15,6 +15,7 @@ OK_PRINTER_SN = "XXXXXXXXXXXXXXXX"  # 小票机
 # element C inside will be valid while element L will be invalid
 # 2. do not use multiple alignment elements in the same. for example, <L>left<L/><C>center<C/>,
 # only the last alignment element C is valid
+
 
 def printFontAlign():
     # 〈BR〉: line break (if there is a closing tag (e.g. 〈/C〉), it should be placed in front of the closing tag, two consecutive line breaks indicate adding a null string.
@@ -35,7 +36,7 @@ def printFontAlign():
     # 〈BARCODE〉〈/BARCODE〉: barcode (the content is a value of barcode)
     # 〈CUT〉: cutter command (active paper cutting, only valid for cutter printer. Note: the print order of cutter printer has a cutter instruction by default in the end.)
 
-    printContent = '''no element：default font<BR>
+    printContent = """no element：default font<BR>
 <BR>
 L element: <L>left<BR></L>
 <BR>
@@ -57,16 +58,16 @@ WB2 element: <WB2>triple font width<BR></WB2>
 <BR>
 B2 element: <B2>triple font size<BR></B2>
 <BR>
-BOLD element: <BOLD>bold font<BR></BOLD>'''
+BOLD element: <BOLD>bold font<BR></BOLD>"""
 
-    printContent = printContent + '<BR>'
+    printContent = printContent + "<BR>"
     # nested using font and align element
-    printContent = printContent + '<C>nested use:<BOLD>center bold</BOLD><BR></C>'
+    printContent = printContent + "<C>nested use:<BOLD>center bold</BOLD><BR></C>"
 
     # print barcode and QR
-    printContent = printContent + '<BR>'
-    printContent = printContent + '<C><BARCODE>9884822189</BARCODE></C>'
-    printContent = printContent + '<C><QR>https:#www.xpyun.net</QR></C>'
+    printContent = printContent + "<BR>"
+    printContent = printContent + "<C><BARCODE>9884822189</BARCODE></C>"
+    printContent = printContent + "<C><QR>https:#www.xpyun.net</QR></C>"
 
     request = model.PrintRequest(USER_NAME, USER_KEY)
 
@@ -89,11 +90,13 @@ BOLD element: <BOLD>bold font<BR></BOLD>'''
 
     # resp.data: Return to order No. correctly
 
+
 # sample for receipt using font and alignment in nest,support money broadcast
 # notice: 1. do not nested use alignment elements like L C R CB. for example, <L><C>your text<C/><L/>,
 # element C inside will be valid while element L will be invalid
 # 2. do not use multiple alignment elements in the same. for example, <L>left<L/><C>center<C/>,
 # only the last alignment element C is valid
+
 
 def printFontAlignVoiceSupport():
     # 〈BR〉: line break (if there is a closing tag (e.g. 〈/C〉), it should be placed in front of the closing tag, two consecutive line breaks indicate adding a null string.
@@ -114,7 +117,7 @@ def printFontAlignVoiceSupport():
     # 〈BARCODE〉〈/BARCODE〉: barcode (the content is a value of barcode)
     # 〈CUT〉: cutter command (active paper cutting, only valid for cutter printer. Note: the print order of cutter printer has a cutter instruction by default in the end.)
 
-    printContent = '''no element：default font<BR>
+    printContent = """no element：default font<BR>
 <BR>
 L element: <L>left<BR></L>
 <BR>
@@ -136,16 +139,16 @@ WB2 element: <WB2>triple font width<BR></WB2>
 <BR>
 B2 element: <B2>triple font size<BR></B2>
 <BR>
-BOLD element: <BOLD>bold font<BR></BOLD>'''
+BOLD element: <BOLD>bold font<BR></BOLD>"""
 
-    printContent = printContent + '<BR>'
+    printContent = printContent + "<BR>"
     # nested using font and align element
-    printContent = printContent + '<C>nested use:<BOLD>center bold</BOLD><BR></C>'
+    printContent = printContent + "<C>nested use:<BOLD>center bold</BOLD><BR></C>"
 
     # print barcode and QR
-    printContent = printContent + '<BR>'
-    printContent = printContent + '<C><BARCODE>9884822189</BARCODE></C>'
-    printContent = printContent + '<C><QR>https:#www.xpyun.net</QR></C>'
+    printContent = printContent + "<BR>"
+    printContent = printContent + "<C><BARCODE>9884822189</BARCODE></C>"
+    printContent = printContent + "<C><QR>https:#www.xpyun.net</QR></C>"
 
     request = model.PrintRequest(USER_NAME, USER_KEY)
 
@@ -219,25 +222,49 @@ def printComplexReceipt():
     printContent = printContent + "<C>" + "<B>xpyun receipt</B>" + "<BR></C>"
     printContent = printContent + "<BR>"
 
-    printContent = printContent + "name" + " " * 16 + "count" + " " * 2 + "price" + " " * 2 + "<BR>"
+    printContent = (
+        printContent
+        + "name"
+        + " " * 16
+        + "count"
+        + " " * 2
+        + "price"
+        + " " * 2
+        + "<BR>"
+    )
     printContent = printContent + "-" * 32 + "<BR>"
     printContent = printContent + formatter.formatPrintOrderItem("Stewed Ribs", 2, 9.99)
-    printContent = printContent + formatter.formatPrintOrderItem("Boiled Fish", 1, 108.0)
-    printContent = printContent + formatter.formatPrintOrderItem("Braised Codfish with Mushrooms", 1, 99.9)
-    printContent = printContent + formatter.formatPrintOrderItem("Braised Squid", 5, 19.99)
+    printContent = printContent + formatter.formatPrintOrderItem(
+        "Boiled Fish", 1, 108.0
+    )
+    printContent = printContent + formatter.formatPrintOrderItem(
+        "Braised Codfish with Mushrooms", 1, 99.9
+    )
+    printContent = printContent + formatter.formatPrintOrderItem(
+        "Braised Squid", 5, 19.99
+    )
     printContent = printContent + "-" * 32 + "<BR>"
     printContent = printContent + "<R>" + "total:" + "327.83" + "RMB" + "<BR></R>"
 
     printContent = printContent + "<BR>"
-    printContent = printContent + "<L>" \
-                   + "address:" + "Broadway, New York City" + "<BR>" \
-                   + "phone:" + "1363*****88" + "<BR>" \
-                   + "orderTime" + "2020-9-9 15:07:57" + "<BR>" \
-                   + "remarks:" + "Less spicy" + "<BR>"
+    printContent = (
+        printContent
+        + "<L>"
+        + "address:"
+        + "Broadway, New York City"
+        + "<BR>"
+        + "phone:"
+        + "1363*****88"
+        + "<BR>"
+        + "orderTime"
+        + "2020-9-9 15:07:57"
+        + "<BR>"
+        + "remarks:"
+        + "Less spicy"
+        + "<BR>"
+    )
 
-    printContent = printContent + "<C>" \
-                   + "<QR>https:#www.xpyun.net</QR>" \
-                   + "</C>"
+    printContent = printContent + "<C>" + "<QR>https:#www.xpyun.net</QR>" + "</C>"
 
     request = model.PrintRequest(USER_NAME, USER_KEY)
     request.user = USER_NAME
@@ -273,6 +300,7 @@ def printComplexReceipt():
 # complex alignment sample for note,support money broadcast
 # notice: 58mm printer can print 32 characters per line
 
+
 def printComplexReceiptVoiceSupport():
     # 〈BR〉: line break (if there is a closing tag (e.g. 〈/C〉), it should be placed in front of the closing tag, two consecutive line breaks indicate adding a null string.
     # 〈L〉〈/L〉: left aligned
@@ -297,26 +325,49 @@ def printComplexReceiptVoiceSupport():
     printContent = printContent + "<C>" + "<B>xpyun receipt</B>" + "<BR></C>"
     printContent = printContent + "<BR>"
 
-    printContent = printContent + "name" + " " * 16 + "count" + " " * 2 + "price" + " " * 2 \
-                   + "<BR>"
+    printContent = (
+        printContent
+        + "name"
+        + " " * 16
+        + "count"
+        + " " * 2
+        + "price"
+        + " " * 2
+        + "<BR>"
+    )
     printContent = printContent + "-" * 32 + "<BR>"
     printContent = printContent + formatter.formatPrintOrderItem("Stewed Ribs", 2, 9.99)
-    printContent = printContent + formatter.formatPrintOrderItem("Boiled Fish", 1, 108.0)
-    printContent = printContent + formatter.formatPrintOrderItem("Braised Codfish with Mushrooms", 1, 99.9)
-    printContent = printContent + formatter.formatPrintOrderItem("Braised Squid", 5, 19.99)
+    printContent = printContent + formatter.formatPrintOrderItem(
+        "Boiled Fish", 1, 108.0
+    )
+    printContent = printContent + formatter.formatPrintOrderItem(
+        "Braised Codfish with Mushrooms", 1, 99.9
+    )
+    printContent = printContent + formatter.formatPrintOrderItem(
+        "Braised Squid", 5, 19.99
+    )
     printContent = printContent + "-" * 32 + "<BR>"
     printContent = printContent + "<R>" + "total:" + "327.83" + "RMB" + "<BR></R>"
 
     printContent = printContent + "<BR>"
-    printContent = printContent + "<L>" \
-                   + "address:" + "Broadway, New York City" + "<BR>" \
-                   + "phone：" + "1363*****88" + "<BR>" \
-                   + "orderTime：" + "2020-9-9 15:07:57" + "<BR>" \
-                   + "remarks:" + "Less spicy" + "<BR>"
+    printContent = (
+        printContent
+        + "<L>"
+        + "address:"
+        + "Broadway, New York City"
+        + "<BR>"
+        + "phone："
+        + "1363*****88"
+        + "<BR>"
+        + "orderTime："
+        + "2020-9-9 15:07:57"
+        + "<BR>"
+        + "remarks:"
+        + "Less spicy"
+        + "<BR>"
+    )
 
-    printContent = printContent + "<C>" \
-                   + "<QR>https:#www.xpyun.net</QR>" \
-                   + "</C>"
+    printContent = printContent + "<C>" + "<QR>https:#www.xpyun.net</QR>" + "</C>"
 
     request = model.PrintRequest(USER_NAME, USER_KEY)
     request.user = USER_NAME
@@ -379,6 +430,7 @@ def printComplexReceiptVoiceSupport():
 # The greater than and less than signs in the printed content (except labels) need to be translated before they can be printed normally.
 # Among them, "<" is represented by "&lt", and ">" is represented by "&gt"; 1mm=8dots.
 
+
 def printLabel():
     # <PAGE></PAGE>：
     #  Pagination, used to support the printing of multiple different label pages (up to 10 sheets), not using this label means that all elements are only printed on one label page
@@ -435,76 +487,99 @@ def printLabel():
     #  The label content is a QR code value, and the maximum cannot exceed 256 characters
     #  Note: A single order can only print one QR code
 
-
     # print the first label
     printContent = "<PAGE>"
     # Set size of label paper
     printContent = printContent + "<SIZE>40,30</SIZE>"
-    printContent = printContent + '<TEXT x="8" y="8" w="1" h="1" r="0">' \
-                   + "#001" + util.strRepeat(" ", 4) \
-                   + "001" + util.strRepeat(" ", 4) \
-                   + "1/3" \
-                   + "</TEXT>" \
-                   + '<TEXT x="8" y="96" w="2" h="2" r="0">' \
-                   + "Golden Fried Rice" \
-                   + "</TEXT>" \
-                   + '<TEXT x="8" y="200" w="1" h="1" r="0">' \
-                   + "Miss Wang" + util.strRepeat(" ", 4) \
-                   + "136****3388" \
-                   + "</TEXT>" \
-                   + "</PAGE>"
+    printContent = (
+        printContent
+        + '<TEXT x="8" y="8" w="1" h="1" r="0">'
+        + "#001"
+        + util.strRepeat(" ", 4)
+        + "001"
+        + util.strRepeat(" ", 4)
+        + "1/3"
+        + "</TEXT>"
+        + '<TEXT x="8" y="96" w="2" h="2" r="0">'
+        + "Golden Fried Rice"
+        + "</TEXT>"
+        + '<TEXT x="8" y="200" w="1" h="1" r="0">'
+        + "Miss Wang"
+        + util.strRepeat(" ", 4)
+        + "136****3388"
+        + "</TEXT>"
+        + "</PAGE>"
+    )
 
     # print the second label
     printContent = printContent + "<PAGE>"
-    printContent = printContent + '<TEXT x="8" y="8" w="1" h="1" r="0">' \
-                   + "#001" + util.strRepeat(" ", 4) \
-                   + "Table one" + util.strRepeat(" ", 4) \
-                   + "2/3" \
-                   + "</TEXT>" \
-                   + '<TEXT x="8" y="96" w="2" h="2" r="0">' \
-                   + "Cucumber salad" \
-                   + "</TEXT>" \
-                   + '<TEXT x="8" y="200" w="1" h="1" r="0">' \
-                   + "Miss Wang" + util.strRepeat(" ", 4) \
-                   + "136****3388" \
-                   + "</TEXT>" \
-                   + "</PAGE>"
+    printContent = (
+        printContent
+        + '<TEXT x="8" y="8" w="1" h="1" r="0">'
+        + "#001"
+        + util.strRepeat(" ", 4)
+        + "Table one"
+        + util.strRepeat(" ", 4)
+        + "2/3"
+        + "</TEXT>"
+        + '<TEXT x="8" y="96" w="2" h="2" r="0">'
+        + "Cucumber salad"
+        + "</TEXT>"
+        + '<TEXT x="8" y="200" w="1" h="1" r="0">'
+        + "Miss Wang"
+        + util.strRepeat(" ", 4)
+        + "136****3388"
+        + "</TEXT>"
+        + "</PAGE>"
+    )
 
     # print the third label
     printContent = printContent + "<PAGE>"
-    printContent = printContent + '<TEXT x="8" y="8" w="1" h="1" r="0">' \
-                   + "#001" + util.strRepeat(" ", 4) \
-                   + "Table one" + util.strRepeat(" ", 4) \
-                   + "3/3" \
-                   + "</TEXT>" \
-                   + '<TEXT x="8" y="96" w="2" h="2" r="0">' \
-                   + "Boston Lobster" \
-                   + "</TEXT>" \
-                   + '<TEXT x="8" y="200" w="1" h="1" r="0">' \
-                   + "Miss Wang" + util.strRepeat(" ", 4) \
-                   + "136****3388" \
-                   + "</TEXT>" \
-                   + "</PAGE>"
+    printContent = (
+        printContent
+        + '<TEXT x="8" y="8" w="1" h="1" r="0">'
+        + "#001"
+        + util.strRepeat(" ", 4)
+        + "Table one"
+        + util.strRepeat(" ", 4)
+        + "3/3"
+        + "</TEXT>"
+        + '<TEXT x="8" y="96" w="2" h="2" r="0">'
+        + "Boston Lobster"
+        + "</TEXT>"
+        + '<TEXT x="8" y="200" w="1" h="1" r="0">'
+        + "Miss Wang"
+        + util.strRepeat(" ", 4)
+        + "136****3388"
+        + "</TEXT>"
+        + "</PAGE>"
+    )
 
     # print a barcode
     printContent = printContent + "<PAGE>"
-    printContent = printContent + '<TEXT x="8" y="8" w="1" h="1" r="0">' \
-                   + "print a barcode:" \
-                   + "</TEXT>" \
-                   + '<BC128 x="16" y="32" h="32" s="1" n="2" w="2" r="0">' \
-                   + "12345678" \
-                   + '</BC128>' \
-                   + "</PAGE>"
+    printContent = (
+        printContent
+        + '<TEXT x="8" y="8" w="1" h="1" r="0">'
+        + "print a barcode:"
+        + "</TEXT>"
+        + '<BC128 x="16" y="32" h="32" s="1" n="2" w="2" r="0">'
+        + "12345678"
+        + "</BC128>"
+        + "</PAGE>"
+    )
 
     # print a QR code. The minimum width is 128, it will not be able to be scanned if lower than 128
     printContent = printContent + "<PAGE>"
-    printContent = printContent + '<TEXT x="8" y="8" w="1" h="1" r="0">' \
-                   + "print a QR code:" \
-                   + "</TEXT>" \
-                   + '<QR x="16" y="32" w="128">' \
-                   + "https:#www.xpyun.net" \
-                   + '</QR>' \
-                   + "</PAGE>"
+    printContent = (
+        printContent
+        + '<TEXT x="8" y="8" w="1" h="1" r="0">'
+        + "print a QR code:"
+        + "</TEXT>"
+        + '<QR x="16" y="32" w="128">'
+        + "https:#www.xpyun.net"
+        + "</QR>"
+        + "</PAGE>"
+    )
 
     request = model.PrintRequest(USER_NAME, USER_KEY)
     request.user = USER_NAME

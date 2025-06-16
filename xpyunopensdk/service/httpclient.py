@@ -1,5 +1,7 @@
-import requests
 import json
+
+import requests
+
 import xpyunopensdk.model.model as model
 
 """
@@ -11,9 +13,7 @@ import xpyunopensdk.model.model as model
 
 
 def http_post_json(url, body):
-    headers = {
-        "Content-Type": "application/json; charset=UTF-8"
-    }
+    headers = {"Content-Type": "application/json; charset=UTF-8"}
 
     response = requests.post(url, data=json.dumps(body), headers=headers)
 
@@ -27,4 +27,3 @@ def http_post_json(url, body):
     result.content.serverExecutedTime = jsonObj["serverExecutedTime"]
 
     return result
-
